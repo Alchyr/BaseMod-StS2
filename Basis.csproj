@@ -9,9 +9,10 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Content Include="LICENSE.txt" />
+    <Content Include=".gitignore" />
     <Content Include="mod_manifest.json" />
     <Content Include="project.godot" />
-    <Content Include="images\packed\card_portraits\ironclad\test_card.png" />
     <Content Include="Notes.txt" />
   </ItemGroup>
 

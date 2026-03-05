@@ -1,3 +1,9 @@
-# Godot 4+ specific ignores
 .godot/
 /android/
+.git/
+.idea/
+.vs/
+publish/
+.editorconfig
+*.uid
+*.user
