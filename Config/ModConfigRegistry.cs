@@ -1,17 +1,16 @@
-using Godot;
-
 namespace BaseLib.Config;
 
 public static class ModConfigRegistry
 {
-    private static readonly Dictionary<string, Control> ModConfigs = new();
+    private static readonly Dictionary<string, ModConfig> ModConfigs = new();
 
-    public static void Register(string modId, Control configPanel)
+    public static void Register(string modId, ModConfig config)
     {
-        ModConfigs[modId] = configPanel;
+        if (!config.HasSettings()) return;
+        ModConfigs[modId] = config;
     }
 
-    public static Control? Get(string modId)
+    public static ModConfig? Get(string modId)
     {
         return ModConfigs.GetValueOrDefault(modId);
     }

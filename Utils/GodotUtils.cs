@@ -16,6 +16,13 @@ public static class GodotUtils
         return visualsNode;
     }
 
+    public static T TransferAllNodes<T>(this T obj, string sourceScene, params string[] uniqueNames) where T : Node
+    {
+        TransferNodes(obj, PreloadManager.Cache.GetScene(sourceScene).Instantiate(), uniqueNames);
+        return obj;
+    }
+    
+
     private static void TransferNodes(Node target, Node source, params string[] names)
     {
         TransferNodes(target, source, true, names);
@@ -27,10 +34,8 @@ public static class GodotUtils
         List<string> requiredNames = [.. names];
         foreach (var child in source.GetChildren())
         {
-            requiredNames.Remove(child.Name);
-
             source.RemoveChild(child);
-            if (uniqueNames) child.UniqueNameInOwner = true;
+            if (requiredNames.Remove(child.Name) && uniqueNames) child.UniqueNameInOwner = true;
             target.AddChild(child);
             child.Owner = target;
         }

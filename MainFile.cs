@@ -20,6 +20,8 @@ public static class MainFile
     {
         Libgcc();
         
+        ModConfigRegistry.Register(ModId, new BaseLibConfig());
+        
         Harmony harmony = new(ModId);
 
         GetCustomLocKey.Patch(harmony);
@@ -27,10 +29,6 @@ public static class MainFile
         TheBigPatchToCardPileCmdAdd.Patch(harmony);
 
         harmony.PatchAll();
-
-        var panel = new Control();
-        UIElements.CreateButton(panel, "Text", Vector2.Zero, () => { });
-        ModConfigRegistry.Register(ModId, panel);
     }
 
     //Hopefully temporary fix for linux
