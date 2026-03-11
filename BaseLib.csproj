@@ -59,7 +59,7 @@
         <SteamLibraryPath Condition="'$(SteamLibraryPath)' == ''">$(HOME)/.local/share/Steam/steamapps</SteamLibraryPath>
         <Sts2Path Condition="'$(Sts2Path)' == ''">$(SteamLibraryPath)/common/Slay the Spire 2</Sts2Path>
         <Sts2DataDir Condition="'$(Sts2DataDir)' == ''">$(Sts2Path)/data_sts2_linuxbsd_x86_64</Sts2DataDir>
-        <GodotPath Condition="'$(GodotPath)' == ''">$(SteamLibraryPath)/common/Godot Engine/godot.x11.opt.tools.64</GodotPath>
+        <GodotPath Condition="'$(GodotPath)' == ''">$(HOME)/bin/megadot/megadot</GodotPath>
     </PropertyGroup>
     <!-- // TODO: Megadot is version 4.5.1, and the game won't load pck if godot is newer. -->
 
@@ -80,10 +80,10 @@
 
     <ItemGroup>
         <Reference Include="0Harmony">
-            <HintPath>$(Sts2Path)\data_sts2_windows_x86_64\0Harmony.dll</HintPath>
+            <HintPath>$(Sts2DataDir)/0Harmony.dll</HintPath>
         </Reference>
         <Reference Include="sts2">
-            <HintPath>$(Sts2Path)\data_sts2_windows_x86_64\sts2.dll</HintPath>
+            <HintPath>$(Sts2DataDir)/sts2.dll</HintPath>
         </Reference>
     </ItemGroup>
     

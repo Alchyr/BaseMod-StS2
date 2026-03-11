@@ -122,7 +122,9 @@ public class CustomPoolFilters
             StretchMode = TextureRect.StretchModeEnum.KeepAspectCentered,
             Size = new(56, 56),
             Position = new(4, 3),
-            PivotOffset = new(28, 28)
+            PivotOffset = new(28, 28),
+            ShowBehindParent = true,
+            Modulate = Colors.Black with { A = 0.25f },
         };
 
         image.AddChild(shadow);
