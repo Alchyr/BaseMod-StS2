@@ -1,5 +1,7 @@
 BaseLib is a Slay the Spire 2 mod intended as a base for other mods to use as a dependency.
 
+Wiki: https://alchyr.github.io/BaseLib-Wiki/
+
 As dependency: `<PackageReference Include="Alchyr.Sts2.BaseLib" Version="*" />`
 
 You will need to download the `.dll` and `.pck` from releases and put them in `Slay the Spire 2/mods`.

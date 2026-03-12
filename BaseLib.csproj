@@ -59,7 +59,7 @@
         <SteamLibraryPath Condition="'$(SteamLibraryPath)' == ''">$(HOME)/.local/share/Steam/steamapps</SteamLibraryPath>
         <Sts2Path Condition="'$(Sts2Path)' == ''">$(SteamLibraryPath)/common/Slay the Spire 2</Sts2Path>
         <Sts2DataDir Condition="'$(Sts2DataDir)' == ''">$(Sts2Path)/data_sts2_linuxbsd_x86_64</Sts2DataDir>
-        <GodotPath Condition="'$(GodotPath)' == ''">$(SteamLibraryPath)/common/Godot Engine/godot.x11.opt.tools.64</GodotPath>
+        <GodotPath Condition="'$(GodotPath)' == ''">$(HOME)/bin/megadot/megadot</GodotPath>
     </PropertyGroup>
     <!-- // TODO: Megadot is version 4.5.1, and the game won't load pck if godot is newer. -->
 
@@ -80,10 +80,10 @@
 
     <ItemGroup>
         <Reference Include="0Harmony">
-            <HintPath>$(Sts2Path)\data_sts2_windows_x86_64\0Harmony.dll</HintPath>
+            <HintPath>$(Sts2DataDir)/0Harmony.dll</HintPath>
         </Reference>
         <Reference Include="sts2">
-            <HintPath>$(Sts2Path)\data_sts2_windows_x86_64\sts2.dll</HintPath>
+            <HintPath>$(Sts2DataDir)/sts2.dll</HintPath>
         </Reference>
     </ItemGroup>
     
@@ -124,5 +124,27 @@
 
     <Target Name="GodotPublishSkipped" AfterTargets="Publish" Condition="'$(GodotPath)' == '' or !Exists('$(GodotPath)')">
         <Message Text="Skipping Godot .pck export because GodotPath is not configured." Importance="high"/>
+    </Target>
+
+    <Target Name="UpdateManifestVersion" BeforeTargets="Publish">
+      <PropertyGroup>
+        <ManifestPath>$(MSBuildProjectDirectory)\mod_manifest.json</ManifestPath>
+      </PropertyGroup>
+
+      <PropertyGroup>
+        <OldContent>$([System.IO.File]::ReadAllText($(ManifestPath)))</OldContent>
+        <NewContent>$([System.Text.RegularExpressions.Regex]::Replace($(OldContent), '("version":\s*")[^"]*', '$1v$(Version)'))</NewContent>
+      </PropertyGroup>
+
+      <WriteLinesToFile
+        Condition="'$(OldContent)' != '$(NewContent)'"
+        File="$(ManifestPath)"
+        Lines="$(NewContent)"
+        Overwrite="true"
+        Encoding="UTF-8" />
+
+      <Message Condition="'$(OldContent)' != '$(NewContent)'"
+               Text="Updated mod_manifest.json to version $(Version)"
+               Importance="high" />
     </Target>
 </Project>
