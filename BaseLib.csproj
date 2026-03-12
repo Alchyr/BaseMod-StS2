@@ -50,6 +50,7 @@
         <SteamLibraryPath Condition="'$(SteamLibraryPath)' == ''">C:/Program Files (x86)/Steam/steamapps</SteamLibraryPath>
         
         <Sts2Path Condition="'$(Sts2Path)' == ''">$(SteamLibraryPath)/common/Slay the Spire 2</Sts2Path>
+        <Sts2ModsPath Condition="'$(Sts2ModsPath)' == ''">$(Sts2Path)/mods</Sts2ModsPath>
         <Sts2DataDir Condition="'$(Sts2DataDir)' == ''">$(Sts2Path)/data_sts2_windows_x86_64</Sts2DataDir>
         <GodotPath>Z:\Projects\sts2\megadot\MegaDot_v4.5.1-stable_mono_win64.exe</GodotPath>
     </PropertyGroup>
@@ -58,6 +59,7 @@
     <PropertyGroup Condition="'$(IsLinux)' == 'true'">
         <SteamLibraryPath Condition="'$(SteamLibraryPath)' == ''">$(HOME)/.local/share/Steam/steamapps</SteamLibraryPath>
         <Sts2Path Condition="'$(Sts2Path)' == ''">$(SteamLibraryPath)/common/Slay the Spire 2</Sts2Path>
+        <Sts2ModsPath Condition="'$(Sts2ModsPath)' == ''">$(Sts2Path)/mods</Sts2ModsPath>
         <Sts2DataDir Condition="'$(Sts2DataDir)' == ''">$(Sts2Path)/data_sts2_linuxbsd_x86_64</Sts2DataDir>
         <GodotPath Condition="'$(GodotPath)' == ''">$(HOME)/bin/megadot/megadot</GodotPath>
     </PropertyGroup>
@@ -67,8 +69,9 @@
     <PropertyGroup Condition="'$(IsOSX)' == 'true'">
         <SteamLibraryPath Condition="'$(SteamLibraryPath)' == ''">$(HOME)/Library/Application Support/Steam/steamapps</SteamLibraryPath>
         <Sts2Path Condition="'$(Sts2Path)' == ''">$(SteamLibraryPath)/common/Slay the Spire 2</Sts2Path>
-        <Sts2DataDir Condition="'$(Sts2DataDir)' == ''">$(Sts2Path)/data_sts2_macos_x86_64</Sts2DataDir>
-        <GodotPath Condition="'$(GodotPath)' == ''">$(HOME)/</GodotPath>
+        <Sts2ModsPath Condition="'$(Sts2ModsPath)' == ''">$(Sts2Path)/SlayTheSpire2.app/Contents/MacOS/mods</Sts2ModsPath>
+        <Sts2DataDir Condition="'$(Sts2DataDir)' == ''">$(Sts2Path)/SlayTheSpire2.app/Contents/Resources/data_sts2_macos_x86_64</Sts2DataDir>
+        <GodotPath Condition="'$(GodotPath)' == ''">$(HOME)/Applications/Godot_mono.app/Contents/MacOS/Godot</GodotPath>
     </PropertyGroup>
 
     <ItemGroup>
@@ -110,7 +113,7 @@
 
     <Target Name="CopyToModsFolderOnBuild" AfterTargets="PostBuildEvent">
         <Message Text="Copying .dll to mods folder." Importance="high" />
-        <Copy SourceFiles="$(TargetPath)" DestinationFolder="$(Sts2Path)/mods/" />
+        <Copy SourceFiles="$(TargetPath)" DestinationFolder="$(Sts2ModsPath)" />
     </Target>
 
     <Target Name="GodotPublish" AfterTargets="Publish" Condition="'$(GodotPath)' != '' and Exists('$(GodotPath)') and '$(IsInnerGodotExport)' != 'true'">
@@ -119,7 +122,7 @@
               EnvironmentVariables="IsInnerGodotExport=true;MSBUILDDISABLENODEREUSE=1"
               ContinueOnError="WarnAndContinue"/>
         <Message Text="Copying Godot .pck to mods folder" Importance="high"/>
-        <Copy SourceFiles="build/$(MSBuildProjectName).pck" DestinationFolder="$(Sts2Path)/mods/" />
+        <Copy SourceFiles="build/$(MSBuildProjectName).pck" DestinationFolder="$(Sts2ModsPath)" />
     </Target>
 
     <Target Name="GodotPublishSkipped" AfterTargets="Publish" Condition="'$(GodotPath)' == '' or !Exists('$(GodotPath)')">
