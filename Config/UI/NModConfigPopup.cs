@@ -66,8 +66,8 @@ public partial class NModConfigPopup : NClickableControl
 
         _optionScrollContainer = new();
         _optionScrollContainer.MouseFilter = MouseFilterEnum.Stop;
-        _optionScrollContainer.Size = new(Math.Max(480, Size.X * 0.5f), Size.Y * 0.75f);
-        Color back = new Color(0.1f, 0.1f, 0.1f, 0.85f); //Allow mods to change the color of their panel?
+        _optionScrollContainer.Size = new(Math.Max(480, Size.X * 0.5f), Size.Y * 0.81f);
+        Color back = new Color(0.1f, 0.1f, 0.1f); //Allow mods to change the color of their panel?
         Color border = new Color(239/255f, 198/255f, 93/255f); //Allow mods to change the color of their panel?
         _optionScrollContainer.Draw += () =>
         {
