@@ -123,7 +123,7 @@ public partial class NModConfigPopup : NClickableControl
 
         try
         {
-            config.SetupConfigUI(_optionScrollContainer);
+            config.SetupConfigUI(_optionContainer);
             _currentConfig = config;
             config.ConfigChanged += OnConfigChanged;
             Show();
