@@ -4,26 +4,33 @@ namespace BaseLib.Config;
 
 internal class BaseLibConfig : SimpleModConfig
 {
-    [ConfigSection("ExampleSectionOne")]
-    public static CardKeyword Keyword { get; set; } = CardKeyword.None;
-    public static bool Test { get; set; } = true;
-    public static bool AnotherWithMultipleWords { get; set; } = false;
-    public static bool More { get; set; } = false;
+    public enum StartingActEnum
+    {
+        Overgrowth, Underdocks
+    }
 
-    [ConfigSection("Example Section Two")]
-    public static bool One { get; set; } = true;
-    public static bool Two { get; set; } = false;
-    public static bool Three { get; set; } = true;
-    /*
-    public static bool Testing { get; set; } = true;
-    public static bool A { get; set; } = true;
-    public static bool B { get; set; } = true;
-    public static bool C { get; set; } = true;
-    public static bool D { get; set; } = true;
-    public static bool E { get; set; } = true;
-    public static bool F { get; set; } = true;
-    public static bool G { get; set; } = true;
-    public static bool H { get; set; } = true;
-    public static bool I { get; set; } = true;
-    public static bool J { get; set; } = true;*/
+    [ConfigSection("These are just example settings")]
+    public static bool EnableDebugLogging { get; set; } = false;
+    public static bool SkipIntroCinematic { get; set; } = true;
+    public static bool AllowDuplicateRelics { get; set; } = false;
+
+    [ConfigSection("Nothing here does anything at all")]
+    public static CardKeyword CreatedCardKeyword { get; set; } = CardKeyword.None;
+    public static StartingActEnum StartingAct { get; set; } = StartingActEnum.Overgrowth;
+
+    [ConfigSection("Various example sliders")]
+    [SliderRange(0.1, 4.0, 0.05)]
+    [SliderLabelFormat("{0:0.00}x")]
+    public static double EnemyDamageMultiplier { get; set; } = 1.25;
+
+    [SliderRange(-50, 50, 5)]
+    [SliderLabelFormat("{0:+0;-0;0} HP")]
+    public static double StartingHealthOffset { get; set; } = -10;
+
+    [SliderRange(0, 1000)]
+    [SliderLabelFormat("{0} Gold")]
+    public static double StartingGold { get; set; } = 99;
+
+    [SliderRange(0, 10)]
+    public static double MinimumElitesPerAct { get; set; } = 6;
 }

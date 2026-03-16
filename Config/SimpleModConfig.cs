@@ -38,14 +38,7 @@ public class SimpleModConfig : ModConfig
                 // Create the option control
                 t = property.PropertyType;
                 var previousSetting = currentSetting;
-                if (t.IsEnum)
-                {
-                    currentSetting = Generators[typeof(Enum)](this, options, property);
-                }
-                else
-                {
-                    currentSetting = Generators[t](this, options, property);
-                }
+                currentSetting = t.IsEnum ? Generators[typeof(Enum)](this, options, property) : Generators[t](this, options, property);
 
                 // Set up focus handling
                 if (previousSetting != null)
@@ -82,7 +75,11 @@ public class SimpleModConfig : ModConfig
             typeof(bool),
             (cfg, control, property) => cfg.MakeToggleOption(control, property)
         },
-        { 
+        {
+            typeof(double),
+            (cfg, control, property) => cfg.MakeSliderOption(control, property)
+        },
+        {
             typeof(Enum),
             (cfg, control, property) => cfg.MakeDropdownOption(control, property)
         }

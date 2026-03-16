@@ -194,6 +194,19 @@ public abstract partial class ModConfig
         return tickbox;
     }
 
+    public NConfigSlider MakeSliderOption(Control parent, PropertyInfo property)
+    {
+        MarginContainer container = MakeOptionContainer(parent, "Slider_" + property.Name, GetLabelText(property.Name));
+
+        // Slider overlaps the popup window edge a bit with the default margin
+        container.AddThemeConstantOverride("margin_right", 12 + 12);
+
+        var slider = new NConfigSlider().TransferAllNodes(SceneHelper.GetScenePath("screens/settings_slider"));
+        slider.Initialize(this, property);
+        container.AddChild(slider);
+        return slider;
+    }
+
     private static readonly FieldInfo DropdownNode = AccessTools.DeclaredField(typeof(NDropdownPositioner), "_dropdownNode");
     public NDropdownPositioner MakeDropdownOption(Control parent, PropertyInfo property)
     {
