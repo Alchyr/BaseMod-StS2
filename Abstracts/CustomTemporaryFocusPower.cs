@@ -1,8 +1,8 @@
-using MegaCrit.Sts2.Core.Models;
+using MegaCrit.Sts2.Core.Models.Powers;
 
 namespace BaseLib.Abstracts;
 
-public abstract class CustomPowerModel : PowerModel, ICustomPowerModel
+public abstract class CustomTemporaryFocusPower : TemporaryFocusPower, ICustomPowerModel
 {
     public virtual string? CustomPackedIconPath => null;
     public virtual string? CustomBigIconPath => null;
