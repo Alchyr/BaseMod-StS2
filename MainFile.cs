@@ -1,3 +1,4 @@
+using System.Reflection;
 using System.Runtime.InteropServices;
 using BaseLib.Config;
 using BaseLib.Patches.Content;
@@ -16,6 +17,8 @@ public static class MainFile
     public static void Initialize()
     {
         Libgcc();
+
+        Godot.Bridge.ScriptManagerBridge.LookupScriptsInAssembly(Assembly.GetExecutingAssembly());
         
         ModConfigRegistry.Register(ModId, new BaseLibConfig());
         

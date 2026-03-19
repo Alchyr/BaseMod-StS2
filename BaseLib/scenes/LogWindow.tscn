@@ -1,0 +1,47 @@
+[gd_scene load_steps=2 format=3 uid="uid://cv400hm6hsc1a"]
+
+[ext_resource type="Script" uid="uid://b45erckolohq2" path="res://BaseLibScenes/NLogWindow.cs" id="1_ms3l2"]
+
+[node name="LogWindow" type="Window"]
+oversampling_override = 1.0
+title = "Log"
+initial_position = 3
+size = Vector2i(600, 400)
+current_screen = 0
+transient = true
+accessibility_name = "Slay the Spire 2 Log"
+script = ExtResource("1_ms3l2")
+
+[node name="Log" type="Label" parent="."]
+clip_contents = true
+anchors_preset = 12
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_top = -465.0
+grow_horizontal = 2
+grow_vertical = 0
+mouse_filter = 1
+mouse_default_cursor_shape = 1
+theme_override_font_sizes/font_size = 14
+text = "18
+17
+16
+15
+14
+13
+12
+11
+10
+9
+8
+7
+6
+5
+4
+3 This line happens to be very long. This is quite a bit of text, isn't it. Well, it makes for a good sample.
+2
+1 Newest Line."
+vertical_alignment = 2
+autowrap_mode = 2
+paragraph_separator = "NO_PARAGRAPHS"

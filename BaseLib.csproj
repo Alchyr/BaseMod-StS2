@@ -113,10 +113,6 @@
         <Content Include="build\$(MSBuildProjectName).pck" PackagePath="/Content/" />
         <Content Include="$(MSBuildProjectName).json" PackagePath="/Content/" />
     </ItemGroup>
-
-    <ItemGroup>
-      <Folder Include="scenes\baselib\" />
-    </ItemGroup>
     
     <Target Name="UpdateManifestVersion" BeforeTargets="BeforeBuild">
         <PropertyGroup>
