@@ -1,4 +1,6 @@
 {
+  "BASELIB.mod_title": "Example mod configuration",
+
   "BASELIB-FIRST_SECTION.title": "These are just example options",
   "BASELIB-SECOND_SECTION.title": "Nothing here does anything at all",
 

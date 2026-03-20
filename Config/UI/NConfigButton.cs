@@ -1,7 +1,10 @@
-﻿using BaseLib.Patches.UI;
+﻿using System.Reflection;
+using BaseLib.Patches.UI;
 using BaseLib.Utils;
 using Godot;
+using HarmonyLib;
 using MegaCrit.Sts2.Core.Assets;
+using MegaCrit.Sts2.Core.Nodes.Screens.MainMenu;
 using MegaCrit.Sts2.Core.Nodes.Screens.ModdingScreen;
 using MegaCrit.Sts2.Core.Nodes.TopBar;
 
@@ -59,6 +62,7 @@ public partial class NConfigButton : NTopBarButton
         }
     }
 
+    private static readonly FieldInfo ModdingScreenStack = AccessTools.Field(typeof(NModdingScreen), "_stack");
     protected override void OnRelease()
     {
         base.OnRelease();
@@ -74,17 +78,7 @@ public partial class NConfigButton : NTopBarButton
             var modConfig = ModConfigRegistry.Get(mod.manifest?.id);
             if (modConfig != null)
             {
-                // Find NModdingScreen
-                var parent = GetParent();
-                while (parent != null && parent is not NModdingScreen)
-                {
-                    parent = parent.GetParent();
-                }
-
-                if (parent is not NModdingScreen screen) return;
-                
-                NModConfigPopup.ShowModConfig(screen, modConfig, this);
-                IsConfigOpen = true;
+                OpenModConfigSubmenu(modConfig);
             }
         }
         
@@ -105,10 +99,27 @@ public partial class NConfigButton : NTopBarButton
         base.OnUnfocus();
         NHoverTipSet.Remove(this);
     }*/
-	
 
 	protected override bool IsOpen()
     {
         return IsConfigOpen;
+    }
+
+    private void OpenModConfigSubmenu(ModConfig modConfig)
+    {
+        var stackField = AccessTools.Field(typeof(NSubmenu), "_stack");
+
+        if (FindParent("ModdingScreen") is not NModdingScreen moddingScreen ||
+            stackField.GetValue(moddingScreen) is not NMainMenuSubmenuStack stackInstance)
+        {
+            ModConfig.ModConfigLogger.Error("Unable to locate the game's modding screen!\n" +
+                                            "Please report a bug at:\nhttps://github.com/Alchyr/BaseLib-StS2");
+            return;
+        }
+
+        var modConfigSubmenu = stackInstance.PushSubmenuType<NModConfigSubmenu>();
+        modConfigSubmenu.LoadModConfig(modConfig, this);
+
+        IsConfigOpen = true;
     }
 }

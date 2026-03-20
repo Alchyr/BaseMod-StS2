@@ -11,6 +11,7 @@ using MegaCrit.Sts2.addons.mega_text;
 using MegaCrit.Sts2.Core.Assets;
 using MegaCrit.Sts2.Core.Helpers;
 using MegaCrit.Sts2.Core.Localization;
+using MegaCrit.Sts2.Core.Nodes.CommonUi;
 using MegaCrit.Sts2.Core.Nodes.Screens.Settings;
 
 namespace BaseLib.Config;
@@ -26,7 +27,7 @@ public abstract partial class ModConfig
     public event EventHandler? ConfigChanged;
 
     private readonly string _path;
-    protected string ModPrefix { get; private set; }
+    public string ModPrefix { get; private set; }
 
     private readonly string _modConfigName;
     private bool _savingDisabled;
@@ -193,8 +194,12 @@ public abstract partial class ModConfig
         }
         catch (JsonException jsonEx)
         {
+            var locationText = jsonEx.LineNumber.HasValue
+                ? $"Line {jsonEx.LineNumber + 1}, position {jsonEx.BytePositionInLine + 1}"
+                : "unknown line";
             ModConfigLogger.Error($"Failed to parse config file for {_modConfigName}. The JSON is likely invalid.\n" +
-                                  $"Error: {jsonEx.Message}");
+                                  $"File path: {_path}\n" +
+                                  $"Error location: {locationText}");
             ModConfigLogger.Warn("Config saving has been DISABLED for this session to protect any manual edits. " +
                                  "Please fix the JSON formatting.", true);
             _savingDisabled = true;
@@ -323,7 +328,7 @@ public abstract partial class ModConfig
 
     // Creates a raw label control, with no layout (see SimpleModConfig.Create*Option and CreateSectionHeader for
     // layout-ready controls)
-    protected static MegaRichTextLabel CreateRawLabelControl(string labelText, int fontSize)
+    public static MegaRichTextLabel CreateRawLabelControl(string labelText, int fontSize)
     {
         var kreonNormal = PreloadManager.Cache.GetAsset<Font>("res://themes/kreon_regular_shared.tres");
         var kreonBold = PreloadManager.Cache.GetAsset<Font>("res://themes/kreon_bold_shared.tres");
@@ -356,6 +361,23 @@ public abstract partial class ModConfig
             MouseFilter = Control.MouseFilterEnum.Ignore,
             Color = new Color(0.909804f, 0.862745f, 0.745098f, 0.25098f)
         };
+    }
+
+    public static void ShowAndClearPendingErrors()
+    {
+        var pendingMessages = ModConfigLogger.PendingUserMessages;
+        if (pendingMessages.Count <= 0) return;
+
+        var errorPopup = NErrorPopup.Create("Mod configuration error",
+            string.Join('\n', pendingMessages), false);
+        if (errorPopup == null || NModalContainer.Instance == null) return;
+        NModalContainer.Instance.Add(errorPopup);
+
+        var vertPopup = errorPopup.GetNodeOrNull<NVerticalPopup>("VerticalPopup");
+        if (vertPopup == null) return;
+        vertPopup.BodyLabel.AddThemeFontSizeOverrideAll(22);
+
+        pendingMessages.Clear();
     }
 
     [GeneratedRegex("[^a-zA-Z0-9_.]")]
