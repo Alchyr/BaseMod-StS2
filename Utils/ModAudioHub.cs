@@ -12,7 +12,7 @@ namespace BaseLib.Utils;
 
 /// <summary>
 /// Central audio helper for mods depending on BaseLib. Resolves streams under each
-/// character's <see cref="CustomCharacterModel.ModAudioPath"/> (mod res root).
+/// character's <see cref="CustomCharacterModel.CustomAudioPath"/> (mod res root).
 /// </summary>
 public static class ModAudioHub
 {
@@ -44,7 +44,7 @@ public static class ModAudioHub
 
     /// <summary>
     /// Scans loaded assemblies for concrete <see cref="PlaceholderCharacterModel"/> types,
-    /// instantiates them, and registers non-empty <see cref="CustomCharacterModel.ModAudioPath"/>.
+    /// instantiates them, and registers non-empty <see cref="CustomCharacterModel.CustomAudioPath"/>.
     /// </summary>
     public static void DiscoverPlaceholderCharacters()
     {
@@ -83,7 +83,7 @@ public static class ModAudioHub
                 if (instance == null)
                     continue;
 
-                var root = instance.ModAudioPath;
+                var root = instance.CustomAudioPath;
                 if (string.IsNullOrWhiteSpace(root))
                     continue;
 
@@ -112,7 +112,7 @@ public static class ModAudioHub
 
     private static bool TryResolveRoot(CustomCharacterModel? model, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out string? root)
     {
-        root = model?.ModAudioPath?.TrimEnd('/');
+        root = model?.CustomAudioPath?.TrimEnd('/');
         if (!string.IsNullOrEmpty(root))
             return true;
 

@@ -54,7 +54,7 @@ public abstract class CustomCharacterModel : CharacterModel, ICustomModel
     /// <see cref="ModAudioHub"/> resolves <c>audio/sfx/...</c> and <c>audio/bgm/...</c> under this path.
     /// Override in your character model, or call <see cref="ModAudioHub.Register"/> directly. Return null to opt out.
     /// </summary>
-    public virtual string? ModAudioPath => null;
+    public virtual string? CustomAudioPath => null;
 
     //Defaults
     public override int StartingGold => 99;
