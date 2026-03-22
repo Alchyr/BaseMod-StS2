@@ -14,7 +14,7 @@ class ScriptlessNCreatureVisuals
     public static bool Prefix(MonsterModel __instance, ref NCreatureVisuals __result) {
         CustomMonsterModel customMonsterModel =  __instance as CustomMonsterModel;
         if (customMonsterModel != null) {
-            GD.Print("MonsterModel is CustomMonsterModel, using CreateCustomVisuals");
+            MainFile.Logger.Info("MonsterModel is CustomMonsterModel, using CreateCustomVisuals");
             __result = customMonsterModel!.CreateCustomVisuals();
             return false;
         }
@@ -25,7 +25,7 @@ class ScriptlessNCreatureVisuals
             return false;
         }
         catch (Exception e) when (e is NullReferenceException || e is InvalidCastException) {
-            GD.Print("Visuals are not NCreatureVisuals, attempting CreateCustomVisuals");
+            MainFile.Logger.Info("Visuals are not NCreatureVisuals, attempting CreateCustomVisuals");
             __result = customMonsterModel.CreateCustomVisuals();
             return false;
         }
