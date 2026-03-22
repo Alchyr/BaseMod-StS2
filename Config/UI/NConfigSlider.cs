@@ -110,6 +110,14 @@ public partial class NConfigSlider : Control
     {
         var realValue = proxyValue + _realMin;
 
+        // Round to avoid floating point precision issues
+        var step = _slider.Step;
+        if (step > 0)
+        {
+            var decimalPlaces = BitConverter.GetBytes(decimal.GetBits((decimal)step)[3])[2];
+            realValue = Math.Round(realValue, decimalPlaces);
+        }
+
         _property?.SetValue(null, realValue);
         _config?.Changed();
         UpdateLabel(realValue);
