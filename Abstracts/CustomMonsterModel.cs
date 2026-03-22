@@ -1,5 +1,8 @@
 ﻿using BaseLib.Utils;
+using Godot;
+using HarmonyLib;
 using MegaCrit.Sts2.Core.Animation;
+using MegaCrit.Sts2.Core.Assets;
 using MegaCrit.Sts2.Core.Bindings.MegaSpine;
 using MegaCrit.Sts2.Core.Models;
 using MegaCrit.Sts2.Core.Nodes.Combat;
@@ -18,10 +21,10 @@ public abstract class CustomMonsterModel : MonsterModel, ICustomModel
     /// By default, will convert a scene containing the necessary nodes into a NCreatureVisuals even if it is not one.
     /// </summary>
     /// <returns></returns>
-    public virtual NCreatureVisuals? CreateCustomVisuals()
-    {
-        if (CustomVisualPath == null) return null;
-        return GodotUtils.CreatureVisualsFromScene(CustomVisualPath);
+    public virtual NCreatureVisuals? CreateCustomVisuals() {
+        string? path = (CustomVisualPath ?? VisualsPath);
+        if (path == null) return null;
+        return GodotUtils.CreatureVisualsFromScene(path);
     }
     
     
