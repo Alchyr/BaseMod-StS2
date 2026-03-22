@@ -12,10 +12,7 @@ namespace BaseLib.Patches.Content
         public static bool Prefix(NCreature __instance, string trigger)
         {
             if (__instance.HasSpineAnimation) return true;
-
-            var animPlayer = FindAnimationPlayer(__instance.Visuals);
-            if (animPlayer == null) return false;
-
+            
             var animName = trigger switch
             {
                 CreatureAnimator.idleTrigger => "idle",
@@ -26,31 +23,66 @@ namespace BaseLib.Patches.Content
                 _ => trigger.ToLowerInvariant()
             };
 
+            NCreatureVisuals visualNodeRoot = __instance.Visuals;
+            
+            var animPlayer = FindNode<AnimationPlayer>(visualNodeRoot);
+            if (animPlayer != null) {
+                UseAnimationPlayer(animPlayer, animName, trigger);
+                return false;
+            }
+            var animSprite = FindNode<AnimatedSprite2D>(visualNodeRoot);
+            if (animSprite != null) {
+                UseAnimatedSprite2D(animSprite, animName, trigger);
+                return false;
+            }
+            
+            animPlayer ??= SearchRecursive<AnimationPlayer>(visualNodeRoot);
+            if (animPlayer != null) {
+                UseAnimationPlayer(animPlayer, animName, trigger);
+                return false;
+            }
+            animSprite ??= SearchRecursive<AnimatedSprite2D>(visualNodeRoot);
+            if (animSprite != null) {
+                UseAnimatedSprite2D(animSprite, animName, trigger);
+                return false;
+            }
+            
+            return false;
+        }
+
+        private static void UseAnimatedSprite2D(AnimatedSprite2D animSprite, string animName, string trigger)
+        {
+            if (animSprite.SpriteFrames.HasAnimation(animName))
+                animSprite.Play(animName);
+            else if (animSprite.SpriteFrames.HasAnimation(trigger))
+                animSprite.Play(trigger);
+        }
+
+        private static void UseAnimationPlayer(AnimationPlayer animPlayer, string animName, string trigger)
+        {
             if (animPlayer.CurrentAnimation.Equals(animName) || animPlayer.CurrentAnimation.Equals(trigger))
                 animPlayer.Stop();
-            
+
             if (animPlayer.HasAnimation(animName))
                 animPlayer.Play(animName);
             else if (animPlayer.HasAnimation(trigger))
                 animPlayer.Play(trigger);
-
-            return false;
         }
 
-        private static AnimationPlayer? FindAnimationPlayer(Node root)
+        private static T? FindNode<T>(Node root, string? name = null ) where T : Node?
         {
-            return root.GetNodeOrNull<AnimationPlayer>("AnimationPlayer")
-                ?? root.GetNodeOrNull<AnimationPlayer>("Visuals/AnimationPlayer")
-                ?? root.GetNodeOrNull<AnimationPlayer>("Body/AnimationPlayer")
-                ?? SearchRecursive(root);
+            name = name ?? nameof(T);
+            return root.GetNodeOrNull<T>(name)
+                   ?? root.GetNodeOrNull<T>("Visuals/"+name)
+                   ?? root.GetNodeOrNull<T>("Body/"+name);
         }
 
-        private static AnimationPlayer? SearchRecursive(Node node)
+        private static T? SearchRecursive<T>(Node parent) where T : Node?
         {
-            foreach (var child in node.GetChildren())
+            foreach (var child in parent.GetChildren())
             {
-                if (child is AnimationPlayer player) return player;
-                var found = SearchRecursive(child);
+                if (child is T nodeToFind) return nodeToFind;
+                var found = SearchRecursive<T>(child);
                 if (found != null) return found;
             }
             return null;
