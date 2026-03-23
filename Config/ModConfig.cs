@@ -314,6 +314,18 @@ public abstract partial class ModConfig
         return lineEdit;
     }
 
+    /// <summary>
+    /// Creates a raw button control. You may want <see cref="SimpleModConfig.CreateButton" /> instead.
+    /// </summary>
+    /// <param name="labelText">The text to place on the button</param>
+    /// <param name="onPressed">Action to perform when the user clicks/presses the button.</param>
+    protected NConfigButton CreateRawButtonControl(string labelText, Action onPressed)
+    {
+        var button = new NConfigButton();
+        button.Initialize(labelText, onPressed);
+        return button;
+    }
+
     private static readonly FieldInfo DropdownNode = AccessTools.DeclaredField(typeof(NDropdownPositioner), "_dropdownNode");
     /// <inheritdoc cref="CreateRawTickboxControl"/>
     protected NDropdownPositioner CreateRawDropdownControl(PropertyInfo property)

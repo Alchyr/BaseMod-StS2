@@ -17,15 +17,13 @@ public partial class NConfigOptionRow : MarginContainer
     private HoverTip? _hoverTip;
     private bool _hoverTipVisible;
     private readonly string _modPrefix;
-    private readonly PropertyInfo _property;
 
     private const float HoverTipOffset = 1015;
 
-    public NConfigOptionRow(string modPrefix, PropertyInfo property, Control label, Control settingControl)
+    public NConfigOptionRow(string modPrefix, string name, Control label, Control settingControl)
     {
         _modPrefix = modPrefix;
-        _property = property;
-        Name = property.Name;
+        Name = name;
         SettingControl = settingControl;
 
         AddThemeConstantOverride("margin_left", 12);
@@ -38,6 +36,12 @@ public partial class NConfigOptionRow : MarginContainer
 
         AddChild(label);
         AddChild(settingControl);
+    }
+
+    [Obsolete("Use the constructor taking 'string name' instead.")]
+    public NConfigOptionRow(string modPrefix, PropertyInfo property, Control label, Control settingControl)
+        : this(modPrefix, property.Name, label, settingControl)
+    {
     }
 
     /// <summary>
@@ -62,7 +66,7 @@ public partial class NConfigOptionRow : MarginContainer
     /// </summary>
     public void AddHoverTip()
     {
-        var descriptionEntryKey = _modPrefix + StringHelper.Slugify(_property.Name) + ".hover.desc";
+        var descriptionEntryKey = _modPrefix + StringHelper.Slugify(Name) + ".hover.desc";
 
         if (!LocString.Exists("settings_ui", descriptionEntryKey))
         {
@@ -71,8 +75,8 @@ public partial class NConfigOptionRow : MarginContainer
             return;
         }
 
-        var explicitTitleKey = _modPrefix + StringHelper.Slugify(_property.Name) + ".hover.title";
-        var fallbackTitleKey = _modPrefix + StringHelper.Slugify(_property.Name) + ".title";
+        var explicitTitleKey = _modPrefix + StringHelper.Slugify(Name) + ".hover.title";
+        var fallbackTitleKey = _modPrefix + StringHelper.Slugify(Name) + ".title";
         var titleKey = LocString.Exists("settings_ui", fallbackTitleKey) ? fallbackTitleKey : null;
 
         if (LocString.Exists("settings_ui", explicitTitleKey))
@@ -82,6 +86,14 @@ public partial class NConfigOptionRow : MarginContainer
         }
 
         AddCustomHoverTip(titleKey, descriptionEntryKey);
+    }
+
+    /// <summary>
+    /// Removes a hover tip, if present.
+    /// </summary>
+    public void RemoveHoverTip()
+    {
+        _hoverTip = null;
     }
 
     public override void _Process(double delta)

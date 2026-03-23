@@ -38,6 +38,22 @@ public class SimpleModConfig : ModConfig
         CreateStandardOption(CreateRawLineEditControl, property, addHoverTip);
 
     /// <summary>
+    /// Creates a button that can be mapped to perform any action.
+    /// </summary>
+    /// <param name="rowLabelKey">LocString key for the row label (shown where setting names are shown).</param>
+    /// <param name="buttonLabelKey">LocString key for the button's label text.</param>
+    /// <param name="onPressed">Action to perform when clicked/pressed.</param>
+    /// <param name="addHoverTip">If true, generates a localized hover tip; the localization key name is based on rowLabelKey.</param>
+    protected NConfigOptionRow CreateButton(string rowLabelKey, string buttonLabelKey, Action onPressed, bool addHoverTip = false)
+    {
+        var control = CreateRawButtonControl(GetLabelText(buttonLabelKey), onPressed);
+        var label = CreateRawLabelControl(GetLabelText(rowLabelKey), 28);
+        var option = new NConfigOptionRow(ModPrefix, rowLabelKey, label, control);
+        if (addHoverTip) option.AddHoverTip();
+        return option;
+    }
+
+    /// <summary>
     /// Creates a layout-ready section header row.
     /// </summary>
     protected MarginContainer CreateSectionHeader(string labelName, bool alignToTop = false)
@@ -73,7 +89,7 @@ public class SimpleModConfig : ModConfig
     {
         var control = controlCreator.Invoke(property);
         var label = CreateRawLabelControl(GetLabelText(property.Name), 28);
-        var option = new NConfigOptionRow(ModPrefix, property, label, control);
+        var option = new NConfigOptionRow(ModPrefix, property.Name, label, control);
         if (addHoverTip) option.AddHoverTip();
         return option;
     }
