@@ -1,16 +1,14 @@
 using HarmonyLib;
 using MegaCrit.Sts2.Core.Animation;
 using MegaCrit.Sts2.Core.Bindings.MegaSpine;
+using MegaCrit.Sts2.Core.Combat;
 using MegaCrit.Sts2.Core.Models;
 using MegaCrit.Sts2.Core.Nodes.Combat;
 using BaseLib.Utils;
 using Godot;
 using MegaCrit.Sts2.Core.Entities.Players;
 using System.Reflection;
-using MegaCrit.Sts2.Core.Assets;
 using MegaCrit.Sts2.Core.Helpers;
-using BaseLib.Utils.Patching;
-using System.Reflection.Emit;
 
 namespace BaseLib.Abstracts;
 
@@ -28,7 +26,18 @@ public abstract class CustomCharacterModel : CharacterModel, ICustomModel
     public virtual string? CustomTrailPath => null;
     public virtual string? CustomIconTexturePath => null; //smaller icon used in popup showing saved run info
     public virtual string? CustomIconPath => null; //top left while in run, and also icon for compendium pool filter
+    /// <summary>
+    /// A pure Godot scene that BaseLib will convert into a usable NEnergyCounter at runtime.
+    /// The scene may use only engine nodes such as Control, Label, TextureRect, Node2D, and GpuParticles2D.
+    /// </summary>
+    public virtual string? CustomEnergyCounterScenePath => null;
+    /// <summary>
+    /// Legacy simple energy counter API. Prefer <seealso cref="CustomEnergyCounterScenePath"/>.
+    /// </summary>
     public virtual CustomEnergyCounter? CustomEnergyCounter => null;
+    /// <summary>
+    /// Legacy path override for EnergyCounterPath. Prefer <seealso cref="CustomEnergyCounterScenePath"/>.
+    /// </summary>
     public virtual string? CustomEnergyCounterPath => null;
     public virtual string? CustomRestSiteAnimPath => null;
     public virtual string? CustomMerchantAnimPath => null;
@@ -48,6 +57,13 @@ public abstract class CustomCharacterModel : CharacterModel, ICustomModel
     public virtual string? CustomAttackSfx => null;
     public virtual string? CustomCastSfx => null;
     public virtual string? CustomDeathSfx => null;
+
+    internal string? GetCustomEnergyCounterAssetPath()
+    {
+        if (CustomEnergyCounterScenePath != null) return CustomEnergyCounterScenePath;
+        if (CustomEnergyCounterPath != null) return CustomEnergyCounterPath;
+        return CustomEnergyCounter != null ? SceneHelper.GetScenePath("combat/energy_counters/ironclad_energy_counter") : null;
+    }
 
     //Defaults
     public override int StartingGold => 99;
@@ -168,34 +184,67 @@ public class EnergyCounterOutlineColorPatch {
 
 [HarmonyPatch(typeof(NEnergyCounter), nameof(NEnergyCounter.Create))]
 class EnergyCounterPatch {
-    static List<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions) {
-        return new InstructionPatcher(instructions)
-            .Match(new InstructionMatcher()
-                .ldc_i4_0()
-                .opcode(OpCodes.Conv_I8)
-                .callvirt(null)
-                .stloc_0()
-            )
-            .Insert([
-                CodeInstruction.LoadLocal(0),
-                CodeInstruction.LoadArgument(0),
-                CodeInstruction.Call(typeof(EnergyCounterPatch), nameof(ChangeIroncladEnergy)),
-                CodeInstruction.StoreLocal(0),
-            ]);
-    }
+    [HarmonyPrefix]
+    static bool Prefix(Player player, ref NEnergyCounter? __result) {
+        if (player.Character is not CustomCharacterModel model)
+            return true;
 
-    static NEnergyCounter ChangeIroncladEnergy(NEnergyCounter defaultCounter, Player player) {
-        if (player.Character is not CustomCharacterModel model || model.CustomEnergyCounter is not CustomEnergyCounter counter)
-            return defaultCounter;
-        NEnergyCounter energyCounter = PreloadManager.Cache.GetScene(SceneHelper.GetScenePath(string.Concat("combat/energy_counters/ironclad_energy_counter"))).Instantiate<NEnergyCounter>(0);
-        energyCounter.GetNode<TextureRect>("%Layers/Layer1").Texture = ResourceLoader.Load<Texture2D>(counter.LayerImagePath(1));
-        energyCounter.GetNode<TextureRect>("%RotationLayers/Layer2").Texture = ResourceLoader.Load<Texture2D>(counter.LayerImagePath(2));
-        energyCounter.GetNode<TextureRect>("%RotationLayers/Layer3").Texture = ResourceLoader.Load<Texture2D>(counter.LayerImagePath(3));
-        energyCounter.GetNode<TextureRect>("%Layers/Layer4").Texture = ResourceLoader.Load<Texture2D>(counter.LayerImagePath(4));
-        energyCounter.GetNode<TextureRect>("%Layers/Layer5").Texture = ResourceLoader.Load<Texture2D>(counter.LayerImagePath(5));
-        energyCounter.GetNode<CpuParticles2D>("%BurstBack").Color = counter.BurstColor;
-        energyCounter.GetNode<CpuParticles2D>("%BurstFront").Color = counter.BurstColor;
-        return energyCounter;
+        try
+        {
+            if (model.CustomEnergyCounterScenePath != null)
+            {
+                __result = CustomEnergyCounterFactory.FromScene(model.CustomEnergyCounterScenePath, player);
+                return false;
+            }
+
+            if (model.CustomEnergyCounterPath != null)
+            {
+                __result = CustomEnergyCounterFactory.FromScene(model.CustomEnergyCounterPath, player);
+                return false;
+            }
+
+            if (model.CustomEnergyCounter is CustomEnergyCounter counter)
+            {
+                __result = CustomEnergyCounterFactory.FromLegacy(counter, player);
+                return false;
+            }
+        }
+        catch (System.Exception e)
+        {
+            MainFile.Logger.Error($"Failed to create custom energy counter for {player.Character.Id}: {e}");
+        }
+
+        return true;
+    }
+}
+
+[HarmonyPatch(typeof(NCombatUi), nameof(NCombatUi.Activate))]
+class EnergyCounterStarAnchorPatch
+{
+    private static readonly FieldInfo? EnergyCounterField = AccessTools.Field(typeof(NCombatUi), "_energyCounter");
+    private static readonly FieldInfo? StarCounterField = AccessTools.Field(typeof(NCombatUi), "_starCounter");
+
+    [HarmonyPostfix]
+    static void Postfix(NCombatUi __instance, CombatState state)
+    {
+        if (EnergyCounterField?.GetValue(__instance) is not NEnergyCounter energyCounter) return;
+        if (StarCounterField?.GetValue(__instance) is not NStarCounter starCounter) return;
+        if (energyCounter.GetNodeOrNull<CanvasItem>("%StarAnchor") is not CanvasItem starAnchor) return;
+
+        Vector2 currentScale = starCounter.Scale;
+        Vector2 targetSize = starCounter.Size == Vector2.Zero ? new Vector2(128f, 128f) : starCounter.Size;
+
+        starCounter.Reparent(starAnchor);
+        starCounter.AnchorLeft = 0f;
+        starCounter.AnchorTop = 0f;
+        starCounter.AnchorRight = 0f;
+        starCounter.AnchorBottom = 0f;
+        starCounter.OffsetLeft = 0f;
+        starCounter.OffsetTop = 0f;
+        starCounter.OffsetRight = targetSize.X;
+        starCounter.OffsetBottom = targetSize.Y;
+        starCounter.Position = Vector2.Zero;
+        starCounter.Scale = currentScale;
     }
 }
 
@@ -309,7 +358,7 @@ class EnergyCounterPath
         if (__instance is not CustomCharacterModel customChar)
             return true;
 
-        __result = customChar.CustomEnergyCounterPath;
+        __result = customChar.GetCustomEnergyCounterAssetPath();
         return __result == null;
     }
 }
