@@ -11,3 +11,4 @@ build/BaseLib.pck
 *.user
 *.import
 .vscode/*
+/.dotnet
