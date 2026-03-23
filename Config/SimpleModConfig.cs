@@ -33,6 +33,10 @@ public class SimpleModConfig : ModConfig
     protected NConfigOptionRow CreateDropdownOption(PropertyInfo property, bool addHoverTip = false) =>
         CreateStandardOption(CreateRawDropdownControl, property, addHoverTip);
 
+    /// <inheritdoc cref="CreateStandardOption"/>
+    protected NConfigOptionRow CreateLineEditOption(PropertyInfo property, bool addHoverTip = false) =>
+        CreateStandardOption(CreateRawLineEditControl, property, addHoverTip);
+
     /// <summary>
     /// Creates a layout-ready section header row.
     /// </summary>
@@ -86,6 +90,7 @@ public class SimpleModConfig : ModConfig
         NConfigOptionRow optionRow;
         if (propertyType == typeof(bool)) optionRow = CreateToggleOption(property);
         else if (propertyType == typeof(double)) optionRow = CreateSliderOption(property);
+        else if (propertyType == typeof(string)) optionRow = CreateLineEditOption(property);
         else if (propertyType.IsEnum) optionRow = CreateDropdownOption(property);
         else throw new NotSupportedException($"Type {propertyType.FullName} is not supported by SimpleModConfig.");
 

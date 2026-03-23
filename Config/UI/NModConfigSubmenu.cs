@@ -186,6 +186,7 @@ public partial class NModConfigSubmenu : NSubmenu
 
         try
         {
+            config.ConfigChanged += OnConfigChanged;
             config.SetupConfigUI(_optionContainer);
         }
         catch (Exception e)
@@ -202,8 +203,6 @@ public partial class NModConfigSubmenu : NSubmenu
         try
         {
             SetModTitle(config);
-            config.ConfigChanged += OnConfigChanged;
-
             RefreshSize();
             _scrollContainer.DisableScrollingIfContentFits();
             _scrollContainer.InstantlyScrollToTop();

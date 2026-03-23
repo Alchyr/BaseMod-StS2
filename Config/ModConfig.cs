@@ -306,6 +306,14 @@ public abstract partial class ModConfig
         return slider;
     }
 
+    /// <inheritdoc cref="CreateRawTickboxControl"/>
+    protected NConfigLineEdit CreateRawLineEditControl(PropertyInfo property)
+    {
+        var lineEdit = new NConfigLineEdit();
+        lineEdit.Initialize(this, property);
+        return lineEdit;
+    }
+
     private static readonly FieldInfo DropdownNode = AccessTools.DeclaredField(typeof(NDropdownPositioner), "_dropdownNode");
     /// <inheritdoc cref="CreateRawTickboxControl"/>
     protected NDropdownPositioner CreateRawDropdownControl(PropertyInfo property)

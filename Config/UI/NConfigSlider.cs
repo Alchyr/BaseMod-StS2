@@ -93,7 +93,7 @@ public partial class NConfigSlider : Control
 
     public override void _Ready()
     {
-        _slider.FocusMode = FocusModeEnum.None;
+        _slider.FocusMode = FocusModeEnum.All;
 
         _sliderLabel.AutoSizeEnabled = false;
         _sliderLabel.AddThemeFontSizeOverride("font_size", LabelFontSize);
