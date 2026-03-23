@@ -46,6 +46,7 @@ public abstract partial class ModConfig
     private static readonly JsonSerializerOptions JsonOptions = new() { WriteIndented = true };
 
     protected readonly List<PropertyInfo> ConfigProperties = [];
+    private readonly Dictionary<string, object?> _defaultValues = new();
 
     public static class ModConfigLogger
     {
@@ -115,6 +116,16 @@ public abstract partial class ModConfig
 
             ConfigProperties.Add(property);
         }
+    }
+
+    public T? GetDefaultValue<T>(string propertyName)
+    {
+        if (_defaultValues.TryGetValue(propertyName, out var val) && val is T typedValue)
+        {
+            return typedValue;
+        }
+
+        return default;
     }
     
     public abstract void SetupConfigUI(Control optionContainer);
@@ -207,6 +218,9 @@ public abstract partial class ModConfig
             {
                 foreach (var property in ConfigProperties)
                 {
+                    // Save the default value if this is the first load
+                    _defaultValues.TryAdd(property.Name, property.GetValue(null));
+
                     if (!values.TryGetValue(property.Name, out var value))
                     {
                         // Missing value; might be due to a new mod version, etc. Re-save later to fill it in.
