@@ -10,14 +10,14 @@ using MegaCrit.Sts2.Core.Nodes.TopBar;
 
 namespace BaseLib.Config.UI;
 
-public partial class NConfigButton : NTopBarButton
+public partial class NConfigOpenerButton : NTopBarButton
 {
 	//private static readonly HoverTip _hoverTip = new HoverTip(new LocString("static_hover_tips", "SETTINGS.title"), new LocString("static_hover_tips", "SETTINGS.description"));
 	
     public bool IsConfigOpen { get; set; }
     public static Control Create(string name, NModInfoContainer node)
     {
-        NConfigButton button = new();
+        NConfigOpenerButton button = new();
         button.Name = name;
         button.MouseFilter = MouseFilterEnum.Stop;
 

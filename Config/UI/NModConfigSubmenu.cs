@@ -40,7 +40,7 @@ public partial class NModConfigSubmenu : NSubmenu
     private NScrollableContainer _scrollContainer;
     private Control _contentPanel;
     private MegaRichTextLabel _modTitle;
-    private NConfigButton? _opener;
+    private NConfigOpenerButton? _opener;
     private Tween? _fadeInTween;
 
     private ModConfig? _currentConfig;
@@ -174,7 +174,7 @@ public partial class NModConfigSubmenu : NSubmenu
         GetViewport().Connect(Viewport.SignalName.SizeChanged, Callable.From(RefreshSize));
     }
 
-    public void LoadModConfig(ModConfig config, NConfigButton opener)
+    public void LoadModConfig(ModConfig config, NConfigOpenerButton opener)
     {
         if (_currentConfig != null) _currentConfig.ConfigChanged -= OnConfigChanged;
         _currentConfig = config;
