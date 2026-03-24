@@ -1,4 +1,6 @@
-﻿using MegaCrit.Sts2.Core.Entities.Cards;
+﻿using Godot;
+using MegaCrit.Sts2.Core.Entities.Cards;
+using MegaCrit.Sts2.Core.Nodes.CommonUi;
 
 namespace BaseLib.Config;
 
@@ -24,7 +26,7 @@ internal class BaseLibConfig : SimpleModConfig
     }
 
     // Note: In all the example localization strings below, BASELIB is used because this file is in BaseLib!
-    // Your own mod name would be there if you copied this class over to your mod.
+    // Your own mod name would be required there if you copied this class over to your mod.
 
     // BASELIB-FIRST_EXAMPLE_SECTION.title in settings_ui.json
     [ConfigSection("FirstExampleSection")]
@@ -56,9 +58,32 @@ internal class BaseLibConfig : SimpleModConfig
     [ConfigHoverTip(false)]
     public static double MinimumElitesPerAct { get; set; } = 6;
 
+    //[ConfigTextInput(@"[A-Za-z0-9 ]*")] // Custom regex example, with unlimited length, and empty value allowed
+    [ConfigHoverTip(false)]
+    [ConfigTextInput(TextInputPreset.SafeDisplayName, MaxLength = 16)]
+    public static string PlayerName { get; set; } = "Player";
+
     [ConfigHideInUI] // Load and save automatically, but don't create a UI
     public static int TotalCardsPlayed { get; set; } = 0;
 
     [ConfigIgnore] // Don't load, save or create a UI for this property
     public static int NotAConfigProperty { get; set; } = 42;
+
+    // An example on how to add a custom button at the end of the list, but before the restore defaults button
+    public override void SetupConfigUI(Control optionContainer)
+    {
+        GenerateOptionsForAllProperties(optionContainer);
+
+        optionContainer.AddChild(CreateDividerControl());
+
+        var buttonRow = CreateButton("ExampleButton", "HelloWorld", () =>
+        {
+            var name = string.IsNullOrWhiteSpace(PlayerName) ? "Player" : PlayerName;
+            var popup = NErrorPopup.Create("Hello World", $"Hi there, {name}!", false);
+            if (popup != null && NModalContainer.Instance != null) NModalContainer.Instance.Add(popup);
+        }, true);
+        optionContainer.AddChild(buttonRow);
+
+        AddRestoreDefaultsButton(optionContainer);
+    }
 }

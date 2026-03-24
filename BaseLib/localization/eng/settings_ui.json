@@ -27,5 +27,12 @@
 
   "BASELIB-STARTING_HEALTH_OFFSET.title": "Starting health offset",
   "BASELIB-STARTING_ACT.title": "Starting act",
-  "BASELIB-MINIMUM_ELITES_PER_ACT.title": "Minimum elites per act"
+  "BASELIB-MINIMUM_ELITES_PER_ACT.title": "Minimum elites per act",
+
+  "BASELIB-PLAYER_NAME.title": "Player name",
+  "BASELIB-PLAYER_NAME.placeholder": "Enter a name!",
+
+  "BASELIB-EXAMPLE_BUTTON.title": "Example button",
+  "BASELIB-EXAMPLE_BUTTON.hover.desc": "Click me!",
+  "BASELIB-HELLO_WORLD.title": "Hello world"
 }
