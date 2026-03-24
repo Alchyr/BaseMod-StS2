@@ -331,54 +331,21 @@ public abstract partial class ModConfig
     protected NDropdownPositioner CreateRawDropdownControl(PropertyInfo property)
     {
         var dropdown = new NConfigDropdown();
-        var items = CreateDropdownItems(property, out var currentIndex);
-        dropdown.SetItems(items, currentIndex);
-        
+        dropdown.Initialize(this, property, ModPrefix, Changed);
+        dropdown.SetFromProperty();
+
         var dropdownPositioner = new NDropdownPositioner();
         dropdownPositioner.SetCustomMinimumSize(new(324, 64));
         dropdownPositioner.FocusMode = Control.FocusModeEnum.All;
         dropdownPositioner.SizeFlagsHorizontal = Control.SizeFlags.ShrinkEnd;
         dropdownPositioner.SizeFlagsVertical = Control.SizeFlags.Fill;
+
         DropdownNode.SetValue(dropdownPositioner, dropdown);
 
         dropdownPositioner.AddChild(dropdown);
         dropdownPositioner.MouseFilter = Control.MouseFilterEnum.Ignore;
 
         return dropdownPositioner;
-    }
-
-    private List<NConfigDropdownItem.ConfigDropdownItem> CreateDropdownItems(PropertyInfo property, out int currentIndex)
-    {
-        List<NConfigDropdownItem.ConfigDropdownItem> items = [];
-        var type = property.PropertyType;
-        var currentValue = property.GetValue(null);
-        int count = 0;
-        currentIndex = 0;
-        
-        if (type.IsEnum)
-        {
-            foreach (var value in type.GetEnumValues())
-            {
-                if (currentValue != null && currentValue.Equals(value))
-                {
-                    currentIndex = count;
-                }
-                ++count;
-                var loc = LocString.GetIfExists("settings_ui", $"{ModPrefix}{StringHelper.Slugify(property.Name)}.{value}");
-                var label = loc?.GetRawText() ?? value?.ToString() ?? "UNKNOWN";
-                items.Add(new (label, () =>
-                {
-                    property.SetValue(null, value);
-                    Changed();
-                }));
-            }
-        }
-        else //Check for dropdown options attribute
-        {
-            throw new NotSupportedException("Dropdown only supports enum types currently");
-        }
-
-        return items;
     }
 
     /// <inheritdoc cref="CreateRawTickboxControl"/>

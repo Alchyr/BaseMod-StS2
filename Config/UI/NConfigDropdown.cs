@@ -3,6 +3,7 @@ using BaseLib.Utils;
 using Godot;
 using HarmonyLib;
 using MegaCrit.Sts2.Core.Helpers;
+using MegaCrit.Sts2.Core.Localization;
 using MegaCrit.Sts2.Core.Nodes.CommonUi;
 using MegaCrit.Sts2.Core.Nodes.GodotExtensions;
 using MegaCrit.Sts2.Core.Nodes.Screens.Settings;
@@ -11,7 +12,10 @@ namespace BaseLib.Config.UI;
 
 public partial class NConfigDropdown : NSettingsDropdown
 {
-    private List<NConfigDropdownItem.ConfigDropdownItem>? _items;
+    private List<NConfigDropdownItem.ItemData>? _items;
+    private ModConfig? _config;
+    private PropertyInfo? _property;
+
     private int _currentDisplayIndex = -1;
     private float _lastGlobalY;
     private NodePath _selfNodePath = new(".");
@@ -26,6 +30,44 @@ public partial class NConfigDropdown : NSettingsDropdown
         FocusMode = FocusModeEnum.All;
 
         this.TransferAllNodes(SceneHelper.GetScenePath("screens/settings_dropdown"));
+    }
+
+    public void Initialize(ModConfig config, PropertyInfo property, string modPrefix, Action? onChanged)
+    {
+        _config = config;
+        _property = property;
+        _items = [];
+
+        var type = property.PropertyType;
+        if (!type.IsEnum) throw new NotSupportedException("Dropdown only supports enum types currently");
+
+        foreach (var value in type.GetEnumValues())
+        {
+            var loc = LocString.GetIfExists("settings_ui", $"{modPrefix}{StringHelper.Slugify(property.Name)}.{value}");
+            var label = loc?.GetRawText() ?? value?.ToString() ?? "UNKNOWN";
+
+            _items.Add(new NConfigDropdownItem.ItemData(label, value, () =>
+            {
+                _property.SetValue(null, value);
+                onChanged?.Invoke();
+            }));
+        }
+    }
+
+    public void SetFromProperty()
+    {
+        if (_property == null || _items == null) return;
+
+        var currentValue = _property.GetValue(null);
+
+        var newIndex = _items.FindIndex(item => item.Value?.Equals(currentValue) == true);
+        if (newIndex < 0) newIndex = 0;
+
+        _currentDisplayIndex = newIndex;
+
+        if (!IsNodeReady()) return;
+        _currentOptionLabel.SetTextAutoSize(_items[newIndex].Text);
+        CloseDropdown();
     }
 
     public override void _Process(double delta)
@@ -49,18 +91,12 @@ public partial class NConfigDropdown : NSettingsDropdown
         _lastGlobalY = GlobalPosition.Y;
     }
 
-    public void SetItems(List<NConfigDropdownItem.ConfigDropdownItem> items, int initialIndex)
-    {
-        _items = items;
-        _currentDisplayIndex = initialIndex;
-    }
-
     public override void _Ready()
     {
         ConnectSignals();
         ClearDropdownItems();
 
-        if (_items == null) throw new Exception("Created config dropdown without setting items");
+        if (_items == null) throw new Exception("Created config dropdown without calling Initialize");
 
         for (var i = 0; i < _items.Count; i++)
         {
@@ -95,8 +131,7 @@ public partial class NConfigDropdown : NSettingsDropdown
     
     private void OnDropdownItemSelected(NDropdownItem nDropdownItem)
     {
-        var configDropdownItem = nDropdownItem as NConfigDropdownItem;
-        if (configDropdownItem == null)
+        if (nDropdownItem is not NConfigDropdownItem configDropdownItem)
             return;
         
         CloseDropdown();

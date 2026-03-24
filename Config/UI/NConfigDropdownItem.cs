@@ -8,7 +8,7 @@ public partial class NConfigDropdownItem : NDropdownItem
 {
     private static readonly string BaseScenePath = SceneHelper.GetScenePath("ui/dropdown_item");
 
-    public static NConfigDropdownItem Create(ConfigDropdownItem data)
+    public static NConfigDropdownItem Create(ItemData data)
     {
         var dropdownItem = new NConfigDropdownItem
         {
@@ -21,7 +21,7 @@ public partial class NConfigDropdownItem : NDropdownItem
         return dropdownItem;
     }
 
-    public required ConfigDropdownItem Data;
+    public required ItemData Data;
     public int DisplayIndex;
     private NConfigDropdownItem()
     {
@@ -33,11 +33,11 @@ public partial class NConfigDropdownItem : NDropdownItem
         DisplayIndex = setIndex;
         _label.SetTextAutoSize(Data.Text);
     }
-    
-    
-    public class ConfigDropdownItem(string text, Action onSet)
+
+    public class ItemData(string text, object? value, Action onSet)
     {
-        public readonly string Text = text;
-        public readonly Action OnSet = onSet;
+        public string Text { get; } = text;
+        public object? Value { get; } = value;
+        public Action OnSet { get; } = onSet;
     }
 }
