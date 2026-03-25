@@ -1,12 +1,14 @@
-﻿using BaseLib.Config;
+using System.Text.RegularExpressions;
+using BaseLib.Config;
 using Godot;
+using MegaCrit.Sts2.Core.Logging;
 
 namespace BaseLib.BaseLibScenes;
 
 [GlobalClass]
 public partial class NLogWindow : Window
 {
-    private static LimitedLog _log = new(256);
+    private static readonly LimitedLog _log = new(256);
     private static readonly List<NLogWindow> _listeners = [];
 
     public static void AddLog(string msg)
@@ -21,6 +23,13 @@ public partial class NLogWindow : Window
 
     private ScrollContainer? _scrollContainer;
     private RichTextLabel? _logLabel;
+    private OptionButton? _logLevelDropdown;
+    private LineEdit? _filterInput;
+    private Button? _regexButton;
+
+    private string _filterText = "";
+    private Regex? _regex;
+
     private bool _isFollowingLog = true;
 
     public override void _EnterTree()
@@ -40,9 +49,24 @@ public partial class NLogWindow : Window
         base._Ready();
         EnsureLogLimit();
 
-        _scrollContainer = GetNode<ScrollContainer>("Scroll");
-        _logLabel = GetNode<RichTextLabel>("Scroll/Log");
+        _scrollContainer = GetNode<ScrollContainer>("MainVBox/Scroll");
+        _logLabel = GetNode<RichTextLabel>("MainVBox/Scroll/Log");
+        _logLevelDropdown = GetNode<OptionButton>("MainVBox/TopBarContainer/TopBarHBox/LogLevelOption");
+        _filterInput = GetNode<LineEdit>("MainVBox/TopBarContainer/TopBarHBox/FilterText");
+        _regexButton = GetNode<Button>("MainVBox/TopBarContainer/TopBarHBox/RegexButton");
+
         _logLabel.AddThemeFontOverride("normal_font", ResourceLoader.Load<Font>("res://fonts/source_code_pro_medium.ttf"));
+
+        foreach (var level in Enum.GetValues<LogLevel>())
+        {
+            _logLevelDropdown.AddItem(level.ToString());
+        }
+
+        _logLevelDropdown.Selected = (int)LogLevel.Info;
+
+        _logLevelDropdown.ItemSelected += (_) => Refresh();
+        _filterInput.TextChanged += (_) => UpdateFilter();
+        _regexButton.Toggled += (_) => UpdateFilter();
 
         SizeChanged += UpdateText;
         CloseRequested += QueueFree;
@@ -54,23 +78,57 @@ public partial class NLogWindow : Window
         Refresh();
     }
 
+    private void UpdateFilter()
+    {
+        _filterText = _filterInput?.Text ?? "";
+
+        if (_regexButton?.ButtonPressed != true || string.IsNullOrEmpty(_filterText))
+            _regex = null;
+        else
+        {
+            try
+            {
+                _regex = new Regex(_filterText, RegexOptions.IgnoreCase);
+                _filterInput?.RemoveThemeColorOverride("font_color");
+            }
+            catch
+            {
+                _filterInput?.AddThemeColorOverride("font_color", new Color(1, 0.4f, 0.4f));
+            }
+        }
+
+        Refresh();
+    }
+
     public void Refresh()
     {
         UpdateText();
     }
 
-    public void UpdateText()
+    private void UpdateText()
     {
-        if (_logLabel is null || _scrollContainer is null) return;
+        if (_logLabel is null || _scrollContainer is null || _logLevelDropdown is null) return;
 
         _isFollowingLog = _isFollowingLog || IsNearBottom();
+        _logLabel.Clear();
 
-        _log.Render(_logLabel);
+        var minLevel = (LogLevel)_logLevelDropdown.Selected;
+
+        foreach (var line in _log.Where(MatchesFilter))
+        {
+            LimitedLog.RenderLine(line, minLevel, _logLabel);
+        }
 
         if (_isFollowingLog)
         {
             CallDeferred(nameof(ScrollToBottom));
         }
+    }
+
+    private bool MatchesFilter(string line)
+    {
+        if (string.IsNullOrEmpty(_filterText)) return true;
+        return _regex?.IsMatch(line) ?? line.Contains(_filterText, StringComparison.OrdinalIgnoreCase);
     }
 
     private void ScrollToBottom()
@@ -141,50 +199,39 @@ public partial class NLogWindow : Window
             base.Enqueue(item);
         }
 
-        public void Render(RichTextLabel label)
+        public static void RenderLine(string line, LogLevel minLevel, RichTextLabel? label)
         {
-            label.Clear();
+            if (label is null) return;
+            if (TryGetBracketLevel(line) < minLevel) return;
 
-            foreach (var line in this)
-            {
-                var color = GetColorForLine(line);
-                if (color is not null)
-                {
-                    label.PushColor(color.Value);
-                }
+            var color = GetColorForLine(line);
+            if (color is not null) label.PushColor(color.Value);
 
-                label.AddText(line);
-                label.Newline();
+            label.AddText(line);
+            label.Newline();
 
-                if (color is not null)
-                {
-                    label.Pop();
-                }
-            }
+            if (color is not null) label.Pop();
         }
 
-        private static Color? GetColorForLine(string line)
+        private static LogLevel TryGetBracketLevel(string line)
         {
-            string? level = TryGetBracketLevel(line);
-            if (level is null) return null;
-
-            return level switch
-            {
-                "ERROR" or "FATAL" or "EXCEPTION" => ErrorColor,
-                "WARN" or "WARNING" => WarnColor,
-                "DEBUG" or "TRACE" or "VERYDEBUG" => DebugColor,
-                _ => null
-            };
-        }
-
-        private static string? TryGetBracketLevel(string line)
-        {
-            if (!line.StartsWith('[')) return null;
+            if (!line.StartsWith('[')) return LogLevel.Info;
 
             int closeIndex = line.IndexOf(']');
-            if (closeIndex <= 1) return null;
+            if (closeIndex <= 1) return LogLevel.Info;
 
-            return line[1..closeIndex].ToUpperInvariant();
+            var levelStr = line[1..closeIndex];
+            return Enum.TryParse<LogLevel>(levelStr, ignoreCase: true, out var level)
+                ? level
+                : LogLevel.Error; // Default to error to ensure it's shown
         }
+
+        private static Color? GetColorForLine(string line) => TryGetBracketLevel(line) switch
+        {
+            LogLevel.Error => ErrorColor,
+            LogLevel.Warn  => WarnColor,
+            LogLevel.Info  => null,
+            _              => DebugColor, // VeryDebug, Load, Debug
+        };
     }
 }

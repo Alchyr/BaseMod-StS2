@@ -1,6 +1,32 @@
-[gd_scene load_steps=4 format=3 uid="uid://cv400hm6hsc1a"]
+[gd_scene load_steps=9 format=3 uid="uid://cv400hm6hsc1a"]
 
-[ext_resource type="Script" uid="uid://b45erckolohq2" path="res://BaseLibScenes/NLogWindow.cs" id="1_ms3l2"]
+[ext_resource type="Script" uid="uid://cn2w1j583pltj" path="res://BaseLibScenes/NLogWindow.cs" id="1_ms3l2"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_ms3l2"]
+content_margin_left = 4.0
+content_margin_top = 4.0
+content_margin_right = 4.0
+content_margin_bottom = 4.0
+bg_color = Color(0, 0, 0, 0.20500001)
+border_width_bottom = 1
+border_color = Color(0, 0, 0, 0.53000003)
+
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_ms3l2"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_l7684"]
+content_margin_left = 5.0
+content_margin_top = 3.0
+content_margin_right = 5.0
+content_margin_bottom = 3.0
+bg_color = Color(0, 0, 0, 0.187)
+corner_radius_top_left = 3
+corner_radius_top_right = 3
+corner_radius_bottom_right = 3
+corner_radius_bottom_left = 3
+
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_l7684"]
+
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_dwvlc"]
 
 [sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_scroll"]
 
@@ -13,31 +39,75 @@ initial_position = 3
 size = Vector2i(600, 400)
 current_screen = 0
 transient = true
+min_size = Vector2i(360, 66)
 accessibility_name = "Slay the Spire 2 Log"
 script = ExtResource("1_ms3l2")
 
-[node name="Scroll" type="ScrollContainer" parent="."]
+[node name="MainVBox" type="VBoxContainer" parent="."]
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
-offset_left = 2.0
-offset_top = 2.0
-offset_right = -2.0
-offset_bottom = -2.0
 grow_horizontal = 2
 grow_vertical = 2
-horizontal_scroll_mode = 0
-theme_override_styles/panel = SubResource("StyleBoxEmpty_scroll")
 
-[node name="Log" type="RichTextLabel" parent="Scroll"]
-custom_minimum_size = Vector2(0, 384)
+[node name="TopBarContainer" type="PanelContainer" parent="MainVBox"]
+layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_ms3l2")
+
+[node name="TopBarHBox" type="HBoxContainer" parent="MainVBox/TopBarContainer"]
+layout_mode = 2
+
+[node name="LogLevelLabel" type="Label" parent="MainVBox/TopBarContainer/TopBarHBox"]
+layout_mode = 2
+text = "Min log level:"
+
+[node name="LogLevelOption" type="OptionButton" parent="MainVBox/TopBarContainer/TopBarHBox"]
+layout_mode = 2
+theme_override_styles/focus = SubResource("StyleBoxEmpty_ms3l2")
+
+[node name="Spacer" type="Control" parent="MainVBox/TopBarContainer/TopBarHBox"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_stretch_ratio = 4.0
+
+[node name="FilterText" type="LineEdit" parent="MainVBox/TopBarContainer/TopBarHBox"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_stretch_ratio = 5.0
+theme_override_styles/normal = SubResource("StyleBoxFlat_l7684")
+theme_override_styles/focus = SubResource("StyleBoxEmpty_l7684")
+placeholder_text = "Filter..."
+emoji_menu_enabled = false
+virtual_keyboard_enabled = false
+virtual_keyboard_show_on_focus = false
+clear_button_enabled = true
+
+[node name="RegexButton" type="Button" parent="MainVBox/TopBarContainer/TopBarHBox"]
+custom_minimum_size = Vector2(32, 32)
+layout_mode = 2
+theme_override_styles/focus = SubResource("StyleBoxEmpty_dwvlc")
+toggle_mode = true
+text = ".*"
+
+[node name="Scroll" type="ScrollContainer" parent="MainVBox"]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_styles/panel = SubResource("StyleBoxEmpty_scroll")
+horizontal_scroll_mode = 0
+
+[node name="Log" type="RichTextLabel" parent="MainVBox/Scroll"]
+layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 3
-fit_content = true
-selection_enabled = true
-scroll_active = false
+focus_mode = 2
 mouse_filter = 1
 theme_override_font_sizes/normal_font_size = 14
 theme_override_styles/normal = SubResource("StyleBoxEmpty_log")
 theme_override_styles/focus = SubResource("StyleBoxEmpty_log")
-text = "[ERROR] 18\n[WARN] 17\n[INFO] 16\n[DEBUG] 15"
+text = "[ERROR] 18
+[WARN] 17
+[INFO] 16
+[DEBUG] 15"
+fit_content = true
+scroll_active = false
+selection_enabled = true

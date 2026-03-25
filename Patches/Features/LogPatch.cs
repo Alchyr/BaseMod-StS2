@@ -24,13 +24,15 @@ class LogPatch
         string upperInvariant = logLevel.ToString().ToUpperInvariant();
         switch (logLevel)
         {
-            case LogLevel.Warn:
-                NLogWindow.AddLog($"[{upperInvariant}] {text}");
-                break;
             case LogLevel.Error:
                 var stackTrace = new StackTrace(skipFrames, true);
                 NLogWindow.AddLog($"[{upperInvariant}] {text}\n{stackTrace}");
                 break;
+            case LogLevel.VeryDebug:
+            case LogLevel.Load:
+            case LogLevel.Debug:
+            case LogLevel.Info:
+            case LogLevel.Warn:
             default:
                 NLogWindow.AddLog($"[{upperInvariant}] {text}");
                 break;
