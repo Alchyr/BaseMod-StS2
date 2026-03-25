@@ -42,6 +42,7 @@ public partial class NLogWindow : Window
 
         _scrollContainer = GetNode<ScrollContainer>("Scroll");
         _logLabel = GetNode<RichTextLabel>("Scroll/Log");
+        _logLabel.AddThemeFontOverride("normal_font", ResourceLoader.Load<Font>("res://fonts/source_code_pro_medium.ttf"));
 
         SizeChanged += UpdateText;
         CloseRequested += QueueFree;
