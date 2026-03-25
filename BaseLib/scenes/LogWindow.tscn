@@ -85,9 +85,18 @@ clear_button_enabled = true
 [node name="RegexButton" type="Button" parent="MainVBox/TopBarContainer/TopBarHBox"]
 custom_minimum_size = Vector2(32, 32)
 layout_mode = 2
+tooltip_text = "Use regular expressions"
 theme_override_styles/focus = SubResource("StyleBoxEmpty_dwvlc")
 toggle_mode = true
 text = ".*"
+
+[node name="InverseButton" type="Button" parent="MainVBox/TopBarContainer/TopBarHBox"]
+custom_minimum_size = Vector2(32, 32)
+layout_mode = 2
+tooltip_text = "Negate search (exclude matching lines)"
+theme_override_styles/focus = SubResource("StyleBoxEmpty_dwvlc")
+toggle_mode = true
+text = "!"
 
 [node name="Scroll" type="ScrollContainer" parent="MainVBox"]
 layout_mode = 2

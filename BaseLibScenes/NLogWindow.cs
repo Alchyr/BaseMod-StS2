@@ -26,6 +26,7 @@ public partial class NLogWindow : Window
     private OptionButton? _logLevelDropdown;
     private LineEdit? _filterInput;
     private Button? _regexButton;
+    private Button? _inverseButton;
 
     private string _filterText = "";
     private Regex? _regex;
@@ -57,6 +58,7 @@ public partial class NLogWindow : Window
         _logLevelDropdown = GetNode<OptionButton>("MainVBox/TopBarContainer/TopBarHBox/LogLevelOption");
         _filterInput = GetNode<LineEdit>("MainVBox/TopBarContainer/TopBarHBox/FilterText");
         _regexButton = GetNode<Button>("MainVBox/TopBarContainer/TopBarHBox/RegexButton");
+        _inverseButton = GetNode<Button>("MainVBox/TopBarContainer/TopBarHBox/InverseButton");
 
         _logLabel.AddThemeFontOverride("normal_font", ResourceLoader.Load<Font>("res://fonts/source_code_pro_medium.ttf"));
 
@@ -70,6 +72,7 @@ public partial class NLogWindow : Window
         _logLevelDropdown.ItemSelected += (_) => Refresh();
         _filterInput.TextChanged += (_) => UpdateFilter();
         _regexButton.Toggled += (_) => UpdateFilter();
+        _inverseButton.Toggled += (_) => { Refresh(); ScrollToBottomAsync(); };
 
         SizeChanged += UpdateText;
         CloseRequested += QueueFree;
@@ -152,7 +155,8 @@ public partial class NLogWindow : Window
     private bool MatchesFilter(string line)
     {
         if (string.IsNullOrEmpty(_filterText)) return true;
-        return _regex?.IsMatch(line) ?? line.Contains(_filterText, StringComparison.OrdinalIgnoreCase);
+        var isMatch = _regex?.IsMatch(line) ?? line.Contains(_filterText, StringComparison.OrdinalIgnoreCase);
+        return _inverseButton?.ButtonPressed == true ? !isMatch : isMatch;
     }
 
     private void OnScrollbarValueChanged(double value)
