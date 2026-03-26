@@ -415,11 +415,32 @@ Raw audio files via `PlayFile` give you basic play/stop/volume/pitch. FMOD Studi
 
 ### FMOD Studio Setup
 
-1. Download FMOD Studio **2.03.x** (must match the game's runtime — other versions will crash)
-2. Create a new project
-3. Namespace your events: `event:/mods/yourmod/...`
-4. Build banks for the Desktop platform
+1. Download FMOD Studio **2.03.x** (must match the game's runtime — other versions will crash or fail to load banks)
+2. Create a new project, or use [**sts2-fmod-tools**](https://github.com/elliotttate/sts2-fmod-tools) to generate a complete project from the game's existing audio data — this gives you all 563 events, 9 buses, 12 banks, and the full mixer hierarchy already set up with correct GUIDs, so you can add your own events alongside the game's
+3. Namespace your events to avoid collisions: `event:/mods/yourmod/...`
+4. Build banks for the Desktop platform (**File > Build** or F7 in FMOD Studio)
 5. Ship the `.bank` and `.strings.bank` files with your mod
+
+#### Using sts2-fmod-tools
+
+[sts2-fmod-tools](https://github.com/elliotttate/sts2-fmod-tools) has two parts: a dumper mod that extracts all FMOD metadata from the running game, and a generator that rebuilds it into an openable FMOD Studio project. This is the easiest way to get started with custom banks because:
+
+- You get the game's full bus hierarchy (master, sfx, music, ambience, reverb, chorus, ducking) already wired up — your events can route through the same buses and respect player volume settings
+- All original event GUIDs are preserved, so banks built from this project are drop-in compatible with the game
+- The event folder structure matches the game's layout, making it easy to add events in the right place
+- Parameters, snapshots, and bank assignments are all pre-configured
+
+```bash
+# Quick start
+cd sts2-fmod-tools/dumper && dotnet build   # build the dumper mod
+# Install to game, launch, it dumps fmod_dump.json automatically
+
+cd ../generator
+python generate_fmod_project.py path/to/fmod_dump.json ./STS2_FMOD_Project
+# Open STS2_FMOD_Project/STS2.fspro in FMOD Studio 2.03.x
+```
+
+From there, add your own events, import your audio, build banks, and load them in your mod with `FmodAudio.LoadBank()`.
 
 ## DSP Buffer Tuning
 
