@@ -1,6 +1,10 @@
 {
   "BASELIB.mod_title": "BaseLib",
 
+  "BASELIB-RESTORE_DEFAULTS_BUTTON.title": "Restore defaults",
+  "BASELIB-RESTORE_MODCONFIG_CONFIRMATION.header": "Confirm restore",
+  "BASELIB-RESTORE_MODCONFIG_CONFIRMATION.body": "Restore default settings for this mod?",
+
   "BASELIB-LOG_SECTION.title": "Log window/Console",
 
   "BASELIB-OPEN_LOG_WINDOW_ON_STARTUP.title": "Open log window on startup",
@@ -10,32 +14,5 @@
   "BASELIB-LIMITED_LOG_SIZE.hover.desc": "Maximum number of lines retained in the in-game log window.",
 
   "BASELIB-LOG_FONT_SIZE.title": "Log font size",
-  "BASELIB-LOG_FONT_SIZE.hover.desc": "Can also be set with Ctrl+scroll in the log window.",
-
-  "BASELIB-RESTORE_DEFAULTS.title": "Restore defaults",
-  "BASELIB-RESET_MODCONFIG_CONFIRMATION.body": "Are you sure you want to reset this mod's settings to default?",
-
-  "BASELIB-FIRST_EXAMPLE_SECTION.title": "Everything below is just example settings",
-  "BASELIB-SECOND_SECTION.title": "Nothing here does anything at all",
-
-  "BASELIB-ALLOW_DUPLICATE_RELICS.title": "Allow duplicate relics",
-  "BASELIB-ALLOW_DUPLICATE_RELICS.hover.desc": "Pretend setting to allow duplicate relics",
-
-  "BASELIB-CREATED_CARD_KEYWORD.title": "Created card keyword",
-  "BASELIB-CREATED_CARD_KEYWORD.hover.desc": "Supposedly adds this keyword to cards created in combat (but doesn't actually)",
-
-  "BASELIB-ENEMY_DAMAGE_MULTIPLIER.title": "Enemy damage multiplier",
-  "BASELIB-ENEMY_DAMAGE_MULTIPLIER.hover.title": "",
-  "BASELIB-ENEMY_DAMAGE_MULTIPLIER.hover.desc": "More damage equals more fun...?",
-
-  "BASELIB-STARTING_HEALTH_OFFSET.title": "Starting health offset",
-  "BASELIB-STARTING_ACT.title": "Starting act",
-  "BASELIB-MINIMUM_ELITES_PER_ACT.title": "Minimum elites per act",
-
-  "BASELIB-PLAYER_NAME.title": "Player name",
-  "BASELIB-PLAYER_NAME.placeholder": "Enter a name!",
-
-  "BASELIB-EXAMPLE_BUTTON.title": "Example button",
-  "BASELIB-EXAMPLE_BUTTON.hover.desc": "Click me!",
-  "BASELIB-HELLO_WORLD.title": "Hello world"
+  "BASELIB-LOG_FONT_SIZE.hover.desc": "Can also be set with Ctrl+scroll in the log window."
 }

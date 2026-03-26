@@ -27,7 +27,7 @@ public class SimpleModConfig : ModConfig
 
     protected void AddRestoreDefaultsButton(Control optionContainer)
     {
-        var resetButton = CreateRawButtonControl(GetBaseLibLabelText("RestoreDefaults"), async void () =>
+        var resetButton = CreateRawButtonControl(GetBaseLibLabelText("RestoreDefaultsButton"), async void () =>
         {
             try
             {
@@ -55,10 +55,9 @@ public class SimpleModConfig : ModConfig
         if (confirmationModal == null || NModalContainer.Instance == null) return;
         NModalContainer.Instance.Add(confirmationModal);
 
-        // Only the body is from BaseLib, the others are reused from the game
         var confirmed = await confirmationModal.WaitForConfirmation(
-            body: new LocString("settings_ui", "BASELIB-RESET_MODCONFIG_CONFIRMATION.body"),
-            header: new LocString("settings_ui", "RESET_CONFIRMATION.header"),
+            body: new LocString("settings_ui", "BASELIB-RESTORE_MODCONFIG_CONFIRMATION.body"),
+            header: new LocString("settings_ui", "BASELIB-RESTORE_MODCONFIG_CONFIRMATION.header"),
             noButton: new LocString("main_menu_ui", "GENERIC_POPUP.cancel"),
             yesButton: new LocString("main_menu_ui", "GENERIC_POPUP.confirm")
         );
