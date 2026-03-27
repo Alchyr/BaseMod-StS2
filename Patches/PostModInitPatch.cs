@@ -24,18 +24,22 @@ class PostModInitPatch
             interop.ProcessType(harmony, t);
 
             bool hasSavedProperty = false;
-            foreach (var prop in t.GetDeclaredProperties())
+            foreach (var prop in t.GetProperties())
             {
                 var savedPropertyAttr = prop.GetCustomAttribute<SavedPropertyAttribute>();
                 if (savedPropertyAttr == null) continue;
-                
-                var prefix = t.GetRootNamespace() + "_";
-                if (prop.Name.Length < 16 && !prop.Name.StartsWith(prefix))
+                if (prop.DeclaringType == null) continue;
+
+                if (prop.DeclaringType.GetRootNamespace() != "MegaCrit")
                 {
-                    MainFile.Logger.Warn($"Recommended to add a prefix such as \"{prefix}\" to SavedProperty {prop.Name} for compatibility.");
+                    var prefix = prop.DeclaringType.GetRootNamespace() + "_";
+                    if (prop.Name.Length < 16 && !prop.Name.StartsWith(prefix))
+                    {
+                        MainFile.Logger.Warn($"Recommended to add a prefix such as \"{prefix}\" to SavedProperty {prop.Name} for compatibility.");
+                    }
                 }
+                
                 hasSavedProperty = true;
-                break;
             }
 
             if (hasSavedProperty)
