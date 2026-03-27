@@ -17,9 +17,9 @@
         <PackageId>Alchyr.Sts2.BaseLib</PackageId>
         <Title>BaseLib-StS2</Title>
         <Description>Mod for Slay the Spire 2 providing utilities and features for other mods.</Description>
-        <Version>0.2.0</Version>
+        <Version>0.2.1</Version>
         <Authors>Alchyr</Authors>
-        <PackageReleaseNotes>rewrite node gen into NodeFactory, energy orb factory, CustomOrbModel, showlog polish, more config improvements</PackageReleaseNotes>
+        <PackageReleaseNotes>Compatibility for new beta, config improvements, add doc to nupkg, log window improvements</PackageReleaseNotes>
         <PackageTags>c#</PackageTags>
         <NoWarn>$(NoWarn);NU5128;MSB3270</NoWarn>
 
