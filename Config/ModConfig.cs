@@ -10,6 +10,7 @@ using MegaCrit.Sts2.addons.mega_text;
 using MegaCrit.Sts2.Core.Assets;
 using MegaCrit.Sts2.Core.Helpers;
 using MegaCrit.Sts2.Core.Localization;
+using MegaCrit.Sts2.Core.Nodes;
 using MegaCrit.Sts2.Core.Nodes.CommonUi;
 using MegaCrit.Sts2.Core.Nodes.Screens.MainMenu;
 using MegaCrit.Sts2.Core.Nodes.Screens.Settings;
@@ -25,6 +26,17 @@ public static class NMainMenu_Ready_Patch
     {
         if (ModConfig.ModConfigLogger.PendingUserMessages.Count == 0) return;
         Callable.From(ModConfig.ShowAndClearPendingErrors).CallDeferred();
+    }
+}
+
+[HarmonyPatch(typeof(NGame), nameof(NGame.Quit))]
+public static class NGameQuitModConfigSavePatch
+{
+    public static void Prefix()
+    {
+        BaseLibMain.Logger.Info("NGame.Quit(): saving all ModConfigs");
+        foreach (var modConfig in ModConfigRegistry.GetAll())
+            modConfig.Save();
     }
 }
 

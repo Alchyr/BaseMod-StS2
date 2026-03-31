@@ -9,9 +9,6 @@ public class OptionPools
     /// <summary>
     /// Constructor for an ancient's options that uses a separate pool for each option.
     /// </summary>
-    /// <param name="pool1"></param>
-    /// <param name="pool2"></param>
-    /// <param name="pool3"></param>
     public OptionPools(WeightedList<AncientOption> pool1, WeightedList<AncientOption> pool2, WeightedList<AncientOption> pool3)
     {
         _pools = [pool1, pool2, pool3];
@@ -20,7 +17,6 @@ public class OptionPools
     /// <summary>
     /// Constructor for an ancient's options that uses one pool for its first two options and a second pool for its third option.
     /// </summary>
-    /// <param name="pool"></param>
     public OptionPools(WeightedList<AncientOption> pool12, WeightedList<AncientOption> pool3)
     {
         _pools = [pool12, pool12, pool3];
@@ -29,7 +25,6 @@ public class OptionPools
     /// <summary>
     /// Constructor for an ancient's options using one pool for all its options.
     /// </summary>
-    /// <param name="pool"></param>
     public OptionPools(WeightedList<AncientOption> pool)
     {
         _pools = [pool, pool, pool];

@@ -20,4 +20,6 @@ public static class ModConfigRegistry
     {
         return ModConfigs.Values.OfType<T>().FirstOrDefault();
     }
+
+    public static List<ModConfig> GetAll() => ModConfigs.Values.ToList();
 }

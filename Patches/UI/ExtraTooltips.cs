@@ -33,7 +33,6 @@ public class ExtraTooltips
         //dynvar tips
         foreach (DynamicVar var in card.DynamicVars.Values)
         {
-            var tipMaker = DynamicVarExtensions.DynamicVarTips[var];
             var tip = DynamicVarExtensions.DynamicVarTips[var]?.Invoke();
             if (tip != null) tips.Add(tip);
         }

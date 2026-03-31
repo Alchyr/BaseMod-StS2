@@ -579,9 +579,18 @@ Box = 0x8c,*/
         return this;
     }
 /*Ldelem = 0xa3,
-Stelem = 0xa4,
-Unbox_Any = 0xa5,
-Conv_Ovf_I1 = 0xb3,
+Stelem = 0xa4,*/
+    public InstructionMatcher unbox_any(object param) //0xa5
+    {
+        _target.Add(new(OpCodes.Unbox_Any, param));
+        return this;
+    }
+    public InstructionMatcher unbox_any()
+    {
+        _target.Add(new(OpCodes.Unbox_Any));
+        return this;
+    }
+/*Conv_Ovf_I1 = 0xb3,
 Conv_Ovf_U1 = 0xb4,
 Conv_Ovf_I2 = 0xb5,
 Conv_Ovf_U2 = 0xb6,

@@ -44,8 +44,6 @@ public static class DynamicVarExtensions
     /// By default will pull from the static_hover_tips table.
     /// The key will be the variable's name, with a mod prefix added, in the form of "PREFIX-NAME" (all capitalized).
     /// </summary>
-    /// <param name="var"></param>
-    /// <param name="locTable"></param>
     /// <returns></returns>
     public static DynamicVar WithTooltip(this DynamicVar var, string? locKey = null, string locTable = "static_hover_tips")
     {

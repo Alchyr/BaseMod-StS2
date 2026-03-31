@@ -1,4 +1,5 @@
 using BaseLib.BaseLibScenes;
+using BaseLib.Config;
 using Godot;
 
 namespace BaseLib.Commands;
@@ -33,6 +34,39 @@ internal static class LogWindowPlacement
         if (host.ContentScaleFactor > 0f)
             logWindow.ContentScaleFactor = host.ContentScaleFactor;
 
-        logWindow.Size = ComputeDefaultSize(host.Size);
+        if (BaseLibConfig.LogLastSizeX > 0 && BaseLibConfig.LogLastSizeY > 0)
+            logWindow.Size = new Vector2I(BaseLibConfig.LogLastSizeX, BaseLibConfig.LogLastSizeY);
+        else
+            logWindow.Size = ComputeDefaultSize(host.Size);
+
+        // No save here: if the window is left as-is, it will return to its old position if available next time
+        if (!TryRestorePosition(logWindow))
+            logWindow.MoveToCenter();
+    }
+
+    /// <summary>
+    /// Load a saved position (if any), ensure it is on a visible screen, and restore it.
+    /// </summary>
+    /// <returns>True if position was valid and restored, otherwise false.</returns>
+    private static bool TryRestorePosition(Window logWindow)
+    {
+        var x = BaseLibConfig.LogLastPosX;
+        var y = BaseLibConfig.LogLastPosY;
+
+        // Position not saved; use default
+        if (x == 0 && y == 0)
+            return false;
+
+        var center = new Vector2I(x + logWindow.Size.X / 2, y + logWindow.Size.Y / 2);
+
+        for (var i = 0; i < DisplayServer.GetScreenCount(); i++)
+        {
+            if (!DisplayServer.ScreenGetUsableRect(i).HasPoint(center)) continue;
+
+            logWindow.Position = new Vector2I(x, y);
+            return true;
+        }
+
+        return false;
     }
 }

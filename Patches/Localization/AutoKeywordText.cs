@@ -1,7 +1,7 @@
 ﻿using HarmonyLib;
 using MegaCrit.Sts2.Core.Entities.Cards;
 
-namespace BaseLib.Patches.UI;
+namespace BaseLib.Patches.Localization;
 
 [HarmonyPatch(typeof(CardKeywordOrder), MethodType.StaticConstructor)]
 public class AutoKeywordText

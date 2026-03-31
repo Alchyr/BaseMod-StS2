@@ -263,11 +263,6 @@ public class SimpleModConfig : ModConfig
             .OrderBy(GetSourceOrder)
             .ToList();
 
-        foreach (var member in filteredMembers)
-        {
-            BaseLibMain.Logger.Info("member: " + member.Name);
-        }
-
         for (var i = 0; i < filteredMembers.Count; i++)
         {
             var member = filteredMembers[i];

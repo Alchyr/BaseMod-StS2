@@ -52,13 +52,17 @@ public abstract class NodeFactory<T> : NodeFactory where T : Node, new()
         if (_instance == null) throw new Exception($"No node factory found for type '{typeof(T).FullName}'");
         
         BaseLibMain.Logger.Info($"Creating {typeof(T).Name} from scene {scene.ResourcePath}");
-        var n = scene.Instantiate();
+        return _instance.CreateFromNode(scene.Instantiate());
+    }
+
+    protected override T CreateFromNode(Node n)
+    {
         if (n is T t) return t;
         
         //Attempt conversion.
         var node = new T();
 
-        _instance.ConvertScene(node, n);
+        ConvertScene(node, n);
         
         return node;
     }
@@ -118,7 +122,7 @@ public abstract class NodeFactory<T> : NodeFactory where T : Node, new()
         //Verify existence of/create named nodes
         List<INodeInfo> uniqueNames = [];
         Node placeholder = new();
-        foreach (var named in _namedNodes)
+        foreach (var named in NamedNodes)
         {
             if (named.UniqueName) uniqueNames.Add(named);
             else
@@ -168,13 +172,6 @@ public abstract class NodeFactory<T> : NodeFactory where T : Node, new()
         }
     }
 
-    internal override Node CreateAndConvert(Node source)
-    {
-        var target = new T();
-        ConvertScene(target, source);
-        return target;
-    }
-
     /// <summary>
     /// This method should convert the given node into the target type, or call the base method if unsupported.
     /// The given node should either be freed or incorporated as a child of the generated node.
@@ -212,12 +209,13 @@ public abstract class NodeFactory
     // ThreadStatic is correct here: Godot node creation is main-thread, but this also
     // makes us safe if background asset loading ever calls Instantiate.
     [ThreadStatic]
-    private static bool _isConverting;
+    private static HashSet<Node>? _convertingNodes;
 
     public static void Init()
     {
         new ControlFactory();
         new NCreatureVisualsFactory();
+        new NMerchantCharacterFactory();
         new NEnergyCounterFactory();
 
         RunSelfTests();
@@ -304,14 +302,14 @@ public abstract class NodeFactory
     /// When CreateFromScene also calls Instantiate internally, the postfix handles the conversion
     /// and CreateFromScene's "if (n is T t) return t" short-circuits — both paths produce the same result.
     /// </summary>
-    internal static bool TryAutoConvert(PackedScene scene, ref Node result)
+    internal static bool TryAutoConvert(PackedScene scene, ref Node? result)
     {
-        if (_isConverting || result == null) return false;
+        if (result == null || (_convertingNodes != null && _convertingNodes.Contains(result))) return false;
 
         var path = scene.ResourcePath;
         if (string.IsNullOrEmpty(path)) return false;
-        if (!_sceneTypes.TryGetValue(path, out var expectedType)) return false;
-        if (expectedType.IsAssignableFrom(result.GetType())) return false; // already the right type
+        if (!_sceneTypes.TryGetValue(path, out var expectedType)) return false; //No registered conversion
+        if (expectedType.IsInstanceOfType(result)) return false; // already the right type
 
         if (!_factories.TryGetValue(expectedType, out var factory))
         {
@@ -319,13 +317,16 @@ public abstract class NodeFactory
             return false;
         }
 
-        _isConverting = true;
+        _convertingNodes ??= [];
+        var converting = result;
+        _convertingNodes.Add(converting);
+
         try
         {
             var sourceTypeName = result.GetType().Name;
-            var converted = factory.CreateAndConvert(result);
+            var converted = factory.CreateFromNode(result);
 
-            // Only log the first conversion per path to avoid spam (monsters get instantiated a lot)
+            // Only log the first conversion per path to avoid spam
             if (_loggedConversions.TryAdd(path, 0))
                 BaseLibMain.Logger.Info($"Auto-converted '{path}' from {sourceTypeName} to {converted.GetType().Name}");
 
@@ -338,20 +339,19 @@ public abstract class NodeFactory
             // and may QueueFree it. If conversion fails midway, the original __result is
             // corrupted (children stripped, possibly queued for deletion). We MUST NOT return
             // false and let the caller use the mangled node. Re-throw so the failure is visible.
-            BaseLibMain.Logger.Error($"Auto-conversion failed for '{path}' — the instantiated node is likely corrupt: {e}");
+            BaseLibMain.Logger.Error($"Auto-conversion failed for '{path}': {e}");
             throw;
         }
         finally
         {
-            _isConverting = false;
+            _convertingNodes.Remove(converting);
         }
     }
 
     /// <summary>
     /// Create a new instance of the factory's target type and convert the source node into it.
-    /// Used by auto-conversion to avoid calling Instantiate again.
     /// </summary>
-    internal abstract Node CreateAndConvert(Node source);
+    protected abstract Node CreateFromNode(Node source);
 
     //-- Self-tests: run once at init to verify the whole postfix → factory pipeline works --
 
@@ -465,8 +465,8 @@ public abstract class NodeFactory
 
             var result = scene.Instantiate(PackedScene.GenEditState.Disabled);
             // Should still be Control (no conversion needed), and specifically should NOT
-            // have gone through CreateAndConvert (it would still be Control either way,
-            // but IsAssignableFrom should short-circuit).
+            // have gone through CreateFromNode again (it would still be Control either way,
+            // but IsInstanceOfType should short-circuit).
             Assert(result is Control, "Already-correct-type passthrough");
             result.QueueFree();
         }
@@ -601,13 +601,41 @@ public abstract class NodeFactory
         child.Owner = parent;
     }
 
+    /// <summary>
+    /// Information about an element (node) contained in a scene, used to determine if conversion is possible/how to convert.
+    /// </summary>
     protected interface INodeInfo
     {
+        /// <summary>
+        /// The node's expected path from the root of the scene.
+        /// </summary>
         string Path { get; }
+        /// <summary>
+        /// Whether the node MUST be accessible through a unique name.
+        /// </summary>
         bool UniqueName { get; }
+        /// <summary>
+        /// Whether the node should be made accessible through a unique name. Can be true even if node does not require
+        /// a unique name.
+        /// </summary>
         bool MakeNameUnique { get; }
+        /// <summary>
+        /// Returns true if the node is a valid type to be used as this element of the scene.
+        /// </summary>
+        /// <param name="node"></param>
+        /// <returns></returns>
         bool IsValidType(Node node);
+        /// <summary>
+        /// Returns true if the given node is a valid type, this node requires a unique name,
+        /// and the node is named correctly.
+        /// </summary>
+        /// <param name="n"></param>
+        /// <returns></returns>
         bool IsValidUnique(Node n);
+        /// <summary>
+        /// The type that this node should have.
+        /// </summary>
+        /// <returns></returns>
         Type NodeType();
     }
     protected record NodeInfo<T>(string Path, bool MakeNameUnique = true) : INodeInfo
@@ -636,7 +664,7 @@ public abstract class NodeFactory
     /// Nodes that will be looked for in the generated type.
     /// Not all of these are necessarily required.
     /// </summary>
-    protected readonly List<INodeInfo> _namedNodes;
+    protected readonly List<INodeInfo> NamedNodes;
     
     /// <summary>
     /// If true, then will simply add entire root node of a scene as child of a new instance of target scene type.
@@ -646,11 +674,16 @@ public abstract class NodeFactory
     
     protected NodeFactory(IEnumerable<INodeInfo> namedNodes)
     {
-        _namedNodes = namedNodes.ToList();
-        FlexibleStructure = _namedNodes.All(info => info.UniqueName);
+        NamedNodes = namedNodes.ToList();
+        FlexibleStructure = NamedNodes.All(info => info.UniqueName);
     }
     
     
+    /// <summary>
+    /// Copies common positional/input properties of a control.
+    /// </summary>
+    /// <param name="target"></param>
+    /// <param name="source"></param>
     protected static void CopyControlProperties(Control target, Control source)
     {
         CopyCanvasItemProperties(target, source);
@@ -673,6 +706,11 @@ public abstract class NodeFactory
         target.ClipContents = source.ClipContents;
     }
 
+    /// <summary>
+    /// Copies common positional/input/visual properties of a CanvasItem.
+    /// </summary>
+    /// <param name="target"></param>
+    /// <param name="source"></param>
     protected static void CopyCanvasItemProperties(CanvasItem target, CanvasItem source)
     {
         target.Visible = source.Visible;
@@ -697,6 +735,11 @@ public abstract class NodeFactory
         }
     }
 
+    /// <summary>
+    /// Sets a child node and all its children to be owned by a target node for the purposes of unique name access.
+    /// </summary>
+    /// <param name="target"></param>
+    /// <param name="child"></param>
     protected static void SetChildrenOwner(Node target, Node child)
     {
         foreach (var grandchild in child.GetChildren())

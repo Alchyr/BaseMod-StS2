@@ -1,10 +1,7 @@
 using BaseLib.Extensions;
 using HarmonyLib;
 using MegaCrit.Sts2.Core.Logging;
-using System;
-using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
-using System.Linq;
 using System.Reflection.Emit;
 
 namespace BaseLib.Utils.Patching;
@@ -143,6 +140,7 @@ public class InstructionPatcher(IEnumerable<CodeInstruction> instructions)
     {
         if (index < 0) throw new Exception("Attempted to GetOperand without any match found");
         operand = code[index].operand;
+        Log.Add($"Got operand [{operand?.GetType().FullName}]{operand}");
         return this;
     }
     
@@ -608,5 +606,4 @@ internal enum OpCodeValues
     Sizeof = 0xfe1c,
     Refanytype = 0xfe1d,
     Readonly_ = 0xfe1e,
-    // If you add more opcodes here, modify OpCode.Name to handle them correctly
 }

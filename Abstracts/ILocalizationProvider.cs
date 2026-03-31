@@ -128,6 +128,7 @@ public record ModifierLoc(string Title, string Description, params (string, stri
 /// </summary>
 /// <param name="Name">The monster's name.</param>
 /// <param name="MoveTitles">Sets of move keys and names. Keys should be ALL_CAPS. The name will be displayed when the monster acts.</param>
+/// <param name="ExtraLoc">Any additional desired localization.</param>
 public record MonsterLoc(string Name, IEnumerable<(string, string)> MoveTitles, params (string, string)[] ExtraLoc)
 {
     public static implicit operator List<(string, string)>(MonsterLoc loc)

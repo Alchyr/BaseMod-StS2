@@ -6,7 +6,7 @@ using MegaCrit.Sts2.Core.Nodes.Cards;
 namespace BaseLib.Abstracts;
 
 /// <summary>
-/// Patches for functionality found here <seealso cref="Godot.BaseLib.Patches.CustomPiles"/>
+/// Patches for functionality found in BaseLib.Patches.Content.CustomPiles<seealso cref="BaseLib.Patches.Content.CustomPiles"/>
 /// </summary>
 public abstract class CustomPile : CardPile
 {
@@ -41,6 +41,7 @@ public abstract class CustomPile : CardPile
     /// Create a custom tween when a card is moved to this pile. Return true if a custom tween is created.
     /// Otherwise default tween used to move to discard/draw with GetTargetPosition will be used.
     /// </summary>
+    /// <param name="tween"></param>
     /// <param name="card"></param>
     /// <param name="cardNode"></param>
     /// <param name="oldPile"></param>

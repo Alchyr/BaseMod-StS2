@@ -20,6 +20,15 @@ public static class BaseLibMain
     {
         Libgcc();
 
+        try
+        {
+            NodeFactory.Init();
+        }
+        catch (Exception e)
+        {
+            Logger.Error(e.ToString());
+        }
+        
         Godot.Bridge.ScriptManagerBridge.LookupScriptsInAssembly(Assembly.GetExecutingAssembly());
         
         ModConfigRegistry.Register(ModId, new BaseLibConfig());
@@ -27,12 +36,10 @@ public static class BaseLibMain
         Harmony harmony = new(ModId);
 
         GetCustomLocKey.Patch(harmony);
-
         TheBigPatchToCardPileCmdAdd.Patch(harmony);
 
         harmony.PatchAll();
 
-        NodeFactory.Init();
         HotReloadEngine.Init();
     }
 

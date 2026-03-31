@@ -18,11 +18,11 @@ public class OpenLogWindow : AbstractConsoleCmd
     
     public override CmdResult Process(Player? issuingPlayer, string[] args)
     {
-        OpenWindow();
+        OpenWindow(stealFocus: true);
         return new CmdResult(true, "Opened log window.");
     }
 
-    public static void OpenWindow()
+    public static void OpenWindow(bool stealFocus)
     {
         var instance = NGame.Instance;
         if (instance == null) return;
@@ -31,7 +31,14 @@ public class OpenLogWindow : AbstractConsoleCmd
         window.GuiEmbedSubwindows = false;
         
         var scene = PreloadManager.Cache.GetScene("res://BaseLib/scenes/LogWindow.tscn").Instantiate<NLogWindow>();
-        LogWindowPlacement.ApplyHostWindowDefaults(scene, window);
+
+        // Prevent flicker on open (open in the final position)
+        scene.Visible = false;
         window.AddChildSafely(scene);
+        LogWindowPlacement.ApplyHostWindowDefaults(scene, window);
+        scene.Visible = true;
+
+        if (!stealFocus)
+            window.GrabFocus();
     }
 }

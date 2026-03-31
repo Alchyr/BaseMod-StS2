@@ -83,7 +83,7 @@ public partial class NLogWindow : Window
         _inverseButton.Toggled += (_) => { _settingChanged = true; Refresh(); ScrollToBottomAsync(); };
         _logLevelDropdown.ItemSelected += (_) => { _settingChanged = true; Refresh(); ScrollToBottomAsync(); };
 
-        SizeChanged += UpdateText;
+        SizeChanged += OnSizeChanged;
         CloseRequested += QueueFree;
         _logLabel.Finished += () => { if (_isFollowingLog) ScrollToBottomAsync(); };
 
@@ -116,6 +116,24 @@ public partial class NLogWindow : Window
             _regexButton.CustomMinimumSize = new Vector2(dim, dim);
         if (_inverseButton is not null)
             _inverseButton.CustomMinimumSize = new Vector2(dim, dim);
+    }
+
+    private void OnSizeChanged()
+    {
+        BaseLibConfig.LogLastSizeX = Size.X;
+        BaseLibConfig.LogLastSizeY = Size.Y;
+        UpdateText();
+        ModConfig.SaveDebounced<BaseLibConfig>();
+    }
+
+    public override void _Notification(int what)
+    {
+        base._Notification(what);
+        if (what != NotificationWMPositionChanged) return;
+
+        BaseLibConfig.LogLastPosX = Position.X;
+        BaseLibConfig.LogLastPosY = Position.Y;
+        ModConfig.SaveDebounced<BaseLibConfig>();
     }
 
     private void UpdateFilter()

@@ -53,7 +53,6 @@ public abstract class ConstructedCardModel(
     /// <summary>
     /// Generates a <seealso cref="BlockVar"/>BlockVar with given base value.
     /// </summary>
-    /// <param name="name"></param>
     /// <param name="baseVal"></param>
     /// <returns></returns>
     protected ConstructedCardModel WithBlock(int baseVal)
@@ -96,9 +95,11 @@ public abstract class ConstructedCardModel(
         _hoverTips.Add(new(_=>HoverTipFactory.FromPower<T>()));
         return this;
     }
+
     /// <summary>
     /// Generates a <seealso cref="PowerVar{T}"/>PowerVar with the specified name and adds a tooltip. You can also just pass a PowerVar to <seealso cref="WithVars"/>WithVars.
     /// </summary>
+    /// <param name="name"></param>
     /// <param name="baseVal"></param>
     /// <typeparam name="T"></typeparam>
     /// <returns></returns>

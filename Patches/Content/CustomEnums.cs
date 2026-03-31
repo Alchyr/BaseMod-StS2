@@ -1,7 +1,7 @@
 using System.Reflection;
 using BaseLib.Abstracts;
 using BaseLib.Extensions;
-using BaseLib.Patches.UI;
+using BaseLib.Patches.Localization;
 using HarmonyLib;
 using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.Helpers;

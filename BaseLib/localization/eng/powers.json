@@ -1,0 +1,9 @@
+{
+  "BASELIB-CUSTOM_TEMPORARY_POWER_MODEL.title": "Temporary Power",
+  "BASELIB-CUSTOM_TEMPORARY_POWER_MODEL.description": "Temporarily apply a power to a creature.",
+  "BASELIB-CUSTOM_TEMPORARY_POWER_MODEL.smartDescription": "Temporarily apply a power to a creature.",
+  "BASELIB-CUSTOM_TEMPORARY_POWER_MODEL.UP.description": "Increase a [gold]Power[/gold] for some time.",
+  "BASELIB-CUSTOM_TEMPORARY_POWER_MODEL.UP.smartDescription": "Gain [blue]{Amount:abs()}[/blue] [gold]{BaseLibTitle}[/gold] until the end of your {UntilEndOfOtherSideTurn:cond:|enemies }turn.{Repeat:cond:>0?\\nLasts for [blue]{Repeat:diff()}[/blue] additional {Repeat:plural:turn|turns}.|}",
+  "BASELIB-CUSTOM_TEMPORARY_POWER_MODEL.DOWN.description": "Decrease a [gold]Power[/gold] for some time.",
+  "BASELIB-CUSTOM_TEMPORARY_POWER_MODEL.DOWN.smartDescription": "Lose [blue]{Amount:abs()}[/blue] [gold]{BaseLibTitle}[/gold] until the end of your {UntilEndOfOtherSideTurn:cond:|enemies }turn.{Repeat:cond:>0?\\nLasts for [blue]{Repeat:diff()}[/blue] additional {Repeat:plural:turn|turns}.|}"
+}

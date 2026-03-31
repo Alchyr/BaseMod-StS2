@@ -134,19 +134,15 @@ public static class CommonActions
     /// <summary>
     /// Gains Block based on the card's BlockVar<seealso cref="BlockVar"/>.
     /// </summary>
-    /// <param name="card"></param>
-    /// <param name="play"></param>
     /// <returns></returns>
     public static async Task<decimal> CardBlock(CardModel card, CardPlay play)
     {
         return await CardBlock(card, card.DynamicVars.Block, play);
     }
-    
+
     /// <summary>
     /// Gains Block based on the given BlockVar<seealso cref="BlockVar"/>.
     /// </summary>
-    /// <param name="card"></param>
-    /// <param name="play"></param>
     /// <returns></returns>
     public static async Task<decimal> CardBlock(CardModel card, BlockVar blockVar, CardPlay play)
     {
@@ -156,8 +152,6 @@ public static class CommonActions
     /// <summary>
     /// Draws cards based on the card's CardsVar<seealso cref="CardsVar"/>.
     /// </summary>
-    /// <param name="card"></param>
-    /// <param name="context"></param>
     /// <returns></returns>
     public static async Task<IEnumerable<CardModel>> Draw(CardModel card, PlayerChoiceContext context)
     {
@@ -167,11 +161,6 @@ public static class CommonActions
     /// <summary>
     /// Applies the power specified as the generic parameter to the target.
     /// </summary>
-    /// <param name="target"></param>
-    /// <param name="card"></param>
-    /// <param name="amount"></param>
-    /// <param name="silent"></param>
-    /// <typeparam name="T"></typeparam>
     /// <returns></returns>
     public static async Task<T?> Apply<T>(Creature target, CardModel? card, decimal amount, bool silent = false) where T : PowerModel
     {
@@ -180,10 +169,6 @@ public static class CommonActions
     /// <summary>
     /// Applies the power specified as the generic parameter to the card's owner.
     /// </summary>
-    /// <param name="card"></param>
-    /// <param name="amount"></param>
-    /// <param name="silent"></param>
-    /// <typeparam name="T"></typeparam>
     /// <returns></returns>
     public static async Task<T?> ApplySelf<T>(CardModel card, decimal amount, bool silent = false) where T : PowerModel
     {
@@ -193,11 +178,6 @@ public static class CommonActions
     /// <summary>
     /// Opens a card selection screen where a specific number of cards must be selected and returns the selection result.
     /// </summary>
-    /// <param name="card"></param>
-    /// <param name="selectionPrompt"></param>
-    /// <param name="context"></param>
-    /// <param name="pileType"></param>
-    /// <param name="count"></param>
     /// <returns></returns>
     public static async Task<IEnumerable<CardModel>> SelectCards(CardModel card, LocString selectionPrompt, PlayerChoiceContext context, PileType pileType, int count = 1)
     {
@@ -209,12 +189,6 @@ public static class CommonActions
     /// <summary>
     /// Opens a card selection screen where a range of cards must be selected and returns the selection result.
     /// </summary>
-    /// <param name="card"></param>
-    /// <param name="selectionPrompt"></param>
-    /// <param name="context"></param>
-    /// <param name="pileType"></param>
-    /// <param name="minCount"></param>
-    /// <param name="maxCount"></param>
     /// <returns></returns>
     public static async Task<IEnumerable<CardModel>> SelectCards(CardModel card, LocString selectionPrompt, PlayerChoiceContext context, PileType pileType, int minCount, int maxCount)
     {
@@ -226,10 +200,6 @@ public static class CommonActions
     /// <summary>
     /// Opens a card selection screen selecting a single card and returns that single card (or null if no card could be selected).
     /// </summary>
-    /// <param name="card"></param>
-    /// <param name="selectionPrompt"></param>
-    /// <param name="context"></param>
-    /// <param name="pileType"></param>
     /// <returns></returns>
     public static async Task<CardModel?> SelectSingleCard(CardModel card, LocString selectionPrompt, PlayerChoiceContext context, PileType pileType)
     {

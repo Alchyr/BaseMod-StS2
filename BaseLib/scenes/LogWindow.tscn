@@ -1,6 +1,6 @@
 [gd_scene load_steps=9 format=3 uid="uid://cv400hm6hsc1a"]
 
-[ext_resource type="Script" uid="uid://cn2w1j583pltj" path="res://BaseLibScenes/NLogWindow.cs" id="1_ms3l2"]
+[ext_resource type="Script" path="res://BaseLibScenes/NLogWindow.cs" id="1_ms3l2"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_ms3l2"]
 content_margin_left = 4.0
@@ -34,7 +34,7 @@ corner_radius_bottom_left = 3
 
 [node name="LogWindow" type="Window"]
 title = "Log"
-initial_position = 3
+initial_position = 0
 size = Vector2i(600, 400)
 current_screen = 0
 transient = true

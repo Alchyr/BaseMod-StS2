@@ -12,9 +12,9 @@ namespace BaseLib.Patches.Content;
 [HarmonyPatch(typeof(ModelDb), nameof(ModelDb.InitIds))]
 public static class CustomContentDictionary
 {
-    private static readonly Dictionary<Type, int> CustomModelCounts = []; //May log, may just remove.
+    public static readonly HashSet<Type> RegisteredTypes = [];
+    private static readonly Dictionary<Type, int> CustomModelCounts = [];
     private static readonly Dictionary<Type, Type> PoolTypes = [];
-
     public static readonly List<CustomAncientModel> CustomAncients = [];
 
     // Track which types were added per-assembly for hot reload cleanup
@@ -27,9 +27,15 @@ public static class CustomContentDictionary
         PoolTypes.Add(typeof(PotionPoolModel), typeof(PotionModel));
     }
 
+    public static bool RegisterType(Type t)
+    {
+        return RegisteredTypes.Add(t);
+    }
 
     public static void AddModel(Type modelType)
     {
+        if (!RegisterType(modelType)) return;
+        
         var poolAttribute = modelType.GetCustomAttribute<PoolAttribute>()
             ?? throw new Exception($"Model {modelType.FullName} must be marked with a PoolAttribute to determine which pool to add it to.");
 
@@ -55,8 +61,8 @@ public static class CustomContentDictionary
 
     public static void AddAncient(CustomAncientModel ancient)
     {
-        int count = CustomModelCounts.GetValueOrDefault(typeof(CustomAncientModel), 0);
-        CustomModelCounts[typeof(CustomAncientModel)] = count + 1;
+        if (!RegisterType(ancient.GetType())) return;
+        
         CustomAncients.Add(ancient);
     }
 
@@ -170,6 +176,8 @@ class ModelDbSharedCardPoolsPatch
 
     public static void Register(CustomCardPoolModel pool)
     {
+        if (!CustomContentDictionary.RegisterType(pool.GetType())) return;
+        
         CustomSharedPools.Add(pool);
     }
 
@@ -192,6 +200,8 @@ class ModelDbSharedRelicPoolsPatch
 
     public static void Register(CustomRelicPoolModel pool)
     {
+        if (!CustomContentDictionary.RegisterType(pool.GetType())) return;
+        
         customSharedPools.Add(pool);
     }
 
@@ -214,6 +224,8 @@ class ModelDbSharedPotionPoolsPatch
 
     public static void Register(CustomPotionPoolModel pool)
     {
+        if (!CustomContentDictionary.RegisterType(pool.GetType())) return;
+        
         customSharedPools.Add(pool);
     }
 
@@ -241,102 +253,3 @@ class ActModelGenerateRoomsPatch
         }
     }
 }
-/*
-class CardPoolPatch
-{
-    internal static void Patch(Harmony harmony)
-    {
-        Type[] poolTypes = 
-            [typeof(IroncladCardPool),
-            typeof(SilentCardPool),
-            typeof(DefectCardPool),
-            typeof(RegentCardPool),
-            typeof(NecrobinderCardPool),
-            typeof(ColorlessCardPool),
-            typeof(TokenCardPool),
-            typeof(EventCardPool),
-            typeof(QuestCardPool),
-            typeof(StatusCardPool),
-            typeof(CurseCardPool)
-        ]; //CustomCardPoolModel generate method utilizes CustomContentDictionary
-
-        foreach (var poolType in poolTypes)
-        {
-            var originalMethod = AccessTools.Method(poolType, "GenerateAllCards");
-            var postfix = AccessTools.Method(typeof(CardPoolPatch), nameof(AdjustPool));
-            harmony.Patch(originalMethod, postfix: new HarmonyMethod(postfix));
-        }
-    }
-
-    static CardModel[] AdjustPool(CardModel[] __result, CardPoolModel __instance)
-    {
-        if (CustomContentDictionary.Cards.TryGetValue(__instance.GetType(), out var cards))
-        {
-            return [.. __result, .. cards];
-        }
-        return __result;
-    }
-}
-class RelicPoolPatch
-{
-    internal static void Patch(Harmony harmony)
-    {
-        Type[] poolTypes =
-            [typeof(SharedRelicPool),
-            typeof(IroncladRelicPool),
-            typeof(SilentRelicPool),
-            typeof(DefectRelicPool),
-            typeof(RegentRelicPool),
-            typeof(NecrobinderRelicPool),
-            typeof(EventRelicPool)
-        ]; //CustomRelicPoolModel generate method utilizes CustomContentDictionary
-
-        foreach (var poolType in poolTypes)
-        {
-            var originalMethod = AccessTools.Method(poolType, "GenerateAllRelics");
-            var postfix = AccessTools.Method(typeof(RelicPoolPatch), nameof(AdjustPool));
-            harmony.Patch(originalMethod, postfix: new HarmonyMethod(postfix));
-        }
-    }
-
-    static IEnumerable<RelicModel> AdjustPool(IEnumerable<RelicModel> __result, RelicPoolModel __instance)
-    {
-        if (CustomContentDictionary.Relics.TryGetValue(__instance.GetType(), out var relics))
-        {
-            return [.. __result, .. relics];
-        }
-        return __result;
-    }
-}
-class PotionPoolPatch
-{
-    internal static void Patch(Harmony harmony)
-    {
-        Type[] poolTypes =
-            [typeof(SharedPotionPool),
-            typeof(IroncladPotionPool),
-            typeof(SilentPotionPool),
-            typeof(DefectPotionPool),
-            typeof(RegentPotionPool),
-            typeof(NecrobinderPotionPool),
-            typeof(EventPotionPool),
-            typeof(TokenPotionPool)
-        ]; //CustomPotionPoolModel generate method utilizes CustomContentDictionary
-
-        foreach (var poolType in poolTypes)
-        {
-            var originalMethod = AccessTools.Method(poolType, "GenerateAllPotions");
-            var postfix = AccessTools.Method(typeof(PotionPoolPatch), nameof(AdjustPool));
-            harmony.Patch(originalMethod, postfix: new HarmonyMethod(postfix));
-        }
-    }
-
-    static IEnumerable<PotionModel> AdjustPool(IEnumerable<PotionModel> __result, PotionPoolModel __instance)
-    {
-        if (CustomContentDictionary.Potions.TryGetValue(__instance.GetType(), out var potions))
-        {
-            return [.. __result, .. potions];
-        }
-        return __result;
-    }
-}*/

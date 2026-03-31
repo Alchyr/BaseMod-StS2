@@ -40,6 +40,12 @@ public abstract class CustomAncientModel : AncientEventModel, ICustomModel, ILoc
     /// <returns></returns>
     public virtual bool ShouldForceSpawn(ActModel act, AncientEventModel? rngChosenAncient) => false;
     
+    /// <summary>
+    /// Set up a new OptionPools with 1, 2, or 3 pools using MakePool for each pool.
+    /// If there is 1 pool, all ancient options will be chosen randomly from this pool.
+    /// With 2 pools, the first two options will use the first pool and the last option will use the second pool.
+    /// With 3 pools, each option will use its own pool.
+    /// </summary>
     protected abstract OptionPools MakeOptionPools { get; }
 
     private OptionPools? _optionPools;

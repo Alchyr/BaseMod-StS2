@@ -21,6 +21,7 @@ namespace BaseLib.Utils;
 ///   FmodAudio.LoadBank("path/to/custom.bank");
 ///   FmodAudio.PlayEvent("event:/mods/mymod/my_sound");
 /// </summary>
+[Obsolete("This class is not guaranteed to continue to exist in its current state, and is not recommended for use.")]
 public static class FmodAudio
 {
     private static GodotObject? _server;

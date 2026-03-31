@@ -4,7 +4,7 @@ using HarmonyLib;
 using MegaCrit.Sts2.Core.Entities.Ancients;
 using MegaCrit.Sts2.Core.Models;
 
-namespace BaseLib.Patches.Content;
+namespace BaseLib.Patches.Localization;
 
 [HarmonyPatch(typeof(AncientDialogueSet), nameof(AncientDialogueSet.PopulateLocKeys))]
 class AddAncientDialogues

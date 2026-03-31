@@ -18,6 +18,10 @@ internal class BaseLibConfig : SimpleModConfig
     [ConfigHideInUI] public static bool LogUseRegex { get; set; } = false;
     [ConfigHideInUI] public static bool LogInvertFilter { get; set; } = false;
     [ConfigHideInUI] public static string LogLastFilter { get; set; } = "";
+    [ConfigHideInUI] public static int LogLastSizeX { get; set; } = 0;
+    [ConfigHideInUI] public static int LogLastSizeY { get; set; } = 0;
+    [ConfigHideInUI] public static int LogLastPosX { get; set; } = 0;
+    [ConfigHideInUI] public static int LogLastPosY { get; set; } = 0;
 
     [ConfigSection("HotReloadSection")]
     public static bool EnableFileWatcher { get; set; } = false;

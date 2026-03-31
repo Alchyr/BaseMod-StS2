@@ -43,8 +43,16 @@ public abstract class CustomCardPoolModel : CardPoolModel, ICustomModel, ICustom
     public virtual float S => ShaderColor.S;
     public virtual float V => ShaderColor.V;
 
-    protected override CardModel[] GenerateAllCards() => []; //Content added through ModHelper.ConcatModelsFromMods
+    /// <summary>
+    /// Returns all cards contained in the pool. This method does not need to be overriden if you are using
+    /// CustomCardModel; content will be added through ModHelper.ConcatModelsFromMods
+    /// </summary>
+    /// <returns></returns>
+    protected override CardModel[] GenerateAllCards() => [];
 
+    /// <summary>
+    /// Should be true for a pool not tied to a specific character, like the Curse or Status pool.
+    /// </summary>
     public virtual bool IsShared => false;
 
     /// <summary>
