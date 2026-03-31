@@ -267,12 +267,71 @@ public class ModelDbCustomCharacters
     [HarmonyPostfix]
     public static IEnumerable<CharacterModel> AddCustomPools(IEnumerable<CharacterModel> __result)
     {
+        EnsureScenePathsRegistered();
         return [.. __result, .. CustomCharacters];
     }
 
     public static void Register(CustomCharacterModel character)
     {
         CustomCharacters.Add(character);
+    }
+
+    /// <summary>
+    /// Registers scene paths for all custom characters that haven't been registered yet.
+    /// Called lazily (from AddCustomPools) rather than from the constructor, because
+    /// virtual properties like CustomVisualPath may depend on fields set in derived
+    /// constructors that haven't run yet when Register() is called from the base ctor.
+    /// </summary>
+    /// <remarks>
+    /// Tracks the last-registered paths per character so that re-registration after a
+    /// path change correctly unregisters the stale mapping first.
+    /// </remarks>
+    private static readonly Dictionary<CustomCharacterModel, (string? visualPath, string? energyPath)> _registeredPaths = [];
+
+    internal static void EnsureScenePathsRegistered()
+    {
+        foreach (var character in CustomCharacters)
+        {
+            var visualPath = character.CustomVisualPath;
+            var energyPath = character.GetCustomEnergyCounterAssetPath();
+
+            if (_registeredPaths.TryGetValue(character, out var prev))
+            {
+                // Already registered — check if paths changed (e.g. mod update / hot reload)
+                if (prev.visualPath == visualPath && prev.energyPath == energyPath)
+                    continue;
+
+                // Unregister stale paths before re-registering
+                UnregisterCharacterPaths(prev.visualPath, prev.energyPath);
+            }
+
+            if (visualPath != null)
+                NodeFactory.RegisterSceneType<NCreatureVisuals>(visualPath);
+            if (energyPath != null)
+                NodeFactory.RegisterSceneType<NEnergyCounter>(energyPath);
+
+            _registeredPaths[character] = (visualPath, energyPath);
+        }
+    }
+
+    /// <summary>
+    /// Unregisters all scene paths registered by custom characters.
+    /// Call this during cleanup or before re-initialization.
+    /// </summary>
+    public static void UnregisterAllCharacterScenePaths()
+    {
+        foreach (var (visualPath, energyPath) in _registeredPaths.Values)
+            UnregisterCharacterPaths(visualPath, energyPath);
+
+        _registeredPaths.Clear();
+    }
+
+    private static void UnregisterCharacterPaths(string? visualPath, string? energyPath)
+    {
+        if (visualPath != null)
+            NodeFactory.UnregisterSceneType(visualPath);
+        if (energyPath != null)
+            NodeFactory.UnregisterSceneType(energyPath);
     }
 }
 
