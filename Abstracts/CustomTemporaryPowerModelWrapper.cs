@@ -2,7 +2,6 @@
 using MegaCrit.Sts2.Core.Entities.Creatures;
 using MegaCrit.Sts2.Core.HoverTips;
 using MegaCrit.Sts2.Core.Localization;
-using MegaCrit.Sts2.Core.Localization.DynamicVars;
 using MegaCrit.Sts2.Core.Models;
 
 namespace BaseLib.Abstracts;
@@ -14,9 +13,15 @@ namespace BaseLib.Abstracts;
 /// <typeparam name="TPower">The power that will be applied to the target</typeparam>
 public abstract class CustomTemporaryPowerModelWrapper<TModel, TPower> : CustomTemporaryPowerModel  where TModel : AbstractModel where TPower : PowerModel
 {
-    public override string CustomBigBetaIconPath => this.Amount >= 0 ? "BaseLib/images/powers/big/baselib-power_temp_up.png" : "BaseLib/images/powers/big/baselib-power_temp_down.png";
-    public override string CustomPackedIconPath => this.Amount >= 0 ? "BaseLib/images/powers/baselib-power_temp_up.png" : "BaseLib/images/powers/baselib-power_temp_down.png";
-    public override string CustomBigIconPath => this.Amount >= 0 ? "BaseLib/images/powers/big/baselib-power_temp_up_big.png" : "BaseLib/images/powers/big/baselib-power_temp_down_big.png";
+    public override string CustomBigBetaIconPath => (Amount >= 0 ? "BaseLib/images/powers/big/baselib-power_temp_up.png" : "BaseLib/images/powers/big/baselib-power_temp_down.png");
+    /// <summary>
+    /// Placeholder small icon; you are recommended to override this.
+    /// </summary>
+    public override string CustomPackedIconPath => (Amount >= 0 ? "BaseLib/images/powers/baselib-power_temp_up.png" : "BaseLib/images/powers/baselib-power_temp_down.png");
+    /// <summary>
+    /// Placeholder large icon; you are recommended to override this.
+    /// </summary>
+    public override string CustomBigIconPath => (Amount >= 0 ? "BaseLib/images/powers/big/baselib-power_temp_up_big.png" : "BaseLib/images/powers/big/baselib-power_temp_down_big.png");
 
     public override AbstractModel OriginModel => ModelDb.GetById<AbstractModel>(ModelDb.GetId<TModel>());
     public override PowerModel InternallyAppliedPower => ModelDb.Power<TPower>();
@@ -46,7 +51,7 @@ public abstract class CustomTemporaryPowerModelWrapper<TModel, TPower> : CustomT
                 case MonsterModel monsterModel:
                     return monsterModel.Title;
                 default:
-                    MainFile.Logger.Warn($"Getting the 'Title' for the base model type of '{OriginModel.GetType().Name}' has not been implemented yet. Using default title.");
+                    BaseLibMain.Logger.Warn($"Getting the 'Title' for the base model type of '{OriginModel.GetType().Name}' has not been implemented yet. Using default title.");
                     return new LocString("powers",  "BASELIB-CUSTOM_TEMPORARY_POWER_MODEL.title");
             }
         }
@@ -72,7 +77,7 @@ public abstract class CustomTemporaryPowerModelWrapper<TModel, TPower> : CustomT
                     items = [HoverTipFactory.FromPower(power)];
                     break;
                 default:
-                    MainFile.Logger.Warn($"Getting the Hover Tips for the base model type of '{OriginModel.GetType().Name}' has not been implemented yet.");
+                    BaseLibMain.Logger.Warn($"Getting the Hover Tips for the base model type of '{OriginModel.GetType().Name}' has not been implemented yet.");
                     items = [];
                     break;
             }

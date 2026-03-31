@@ -43,7 +43,7 @@ public abstract class CustomTemporaryPowerModel : CustomPowerModel, ITemporaryPo
         if (InternallyAppliedPower is CustomTemporaryPowerModel)
         {
             // This could lead to infinite recursion if someone makes a mistake and publishes it. So just say no to any attempt.
-            MainFile.Logger.Warn($"Don't put TemporaryPowerModels into a TemporaryPowerModel. Attempted to apply power '{InternallyAppliedPower.GetType().Name}' in power '{this.GetType().Name}'. Power will not be applied!");
+            BaseLibMain.Logger.Warn($"Don't put TemporaryPowerModels into a TemporaryPowerModel. Attempted to apply power '{InternallyAppliedPower.GetType().Name}' in power '{this.GetType().Name}'. Power will not be applied!");
             return;
         }
         if (_shouldIgnoreNextInstance)
