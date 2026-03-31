@@ -274,6 +274,15 @@ public class ModelDbCustomCharacters
     {
         CustomCharacters.Add(character);
     }
+
+    /// <summary>
+    /// Remove all custom characters belonging to the given assembly.
+    /// Called during hot reload cleanup before re-registration from the new assembly.
+    /// </summary>
+    internal static void RemoveByAssembly(System.Reflection.Assembly asm)
+    {
+        CustomCharacters.RemoveAll(c => c.GetType().Assembly == asm);
+    }
 }
 
 

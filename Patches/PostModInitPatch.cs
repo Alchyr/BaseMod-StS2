@@ -10,19 +10,31 @@ using MegaCrit.Sts2.Core.Saves.Runs;
 namespace BaseLib.Patches;
 
 //Simplest patch that occurs after mod initialization, before anything else is done
-[HarmonyPatch(typeof(LocManager), nameof(LocManager.Initialize))] 
+[HarmonyPatch(typeof(LocManager), nameof(LocManager.Initialize))]
 class PostModInitPatch
 {
+    private static Harmony? _postModInitHarmony;
+
     [HarmonyPrefix]
     private static void ProcessModdedTypes()
     {
-        Harmony harmony = new("PostModInit");
+        _postModInitHarmony = new Harmony("PostModInit");
+        ProcessTypes(ReflectionHelper.ModTypes);
+        SavedSpireFieldPatch.AddFieldsSorted();
+    }
 
+    /// <summary>
+    /// Process a set of types for ModInterop, SavedProperty, and SavedSpireField registration.
+    /// Called at startup for all mod types, and again during hot reload for new assembly types.
+    /// </summary>
+    internal static void ProcessTypes(IEnumerable<Type> types)
+    {
+        _postModInitHarmony ??= new Harmony("PostModInit");
         ModInterop interop = new();
-        
-        foreach (var type in ReflectionHelper.ModTypes)
+
+        foreach (var type in types)
         {
-            interop.ProcessType(harmony, type);
+            interop.ProcessType(_postModInitHarmony, type);
 
             bool hasSavedProperty = false;
             foreach (var prop in type.GetProperties())
@@ -39,7 +51,7 @@ class PostModInitPatch
                         BaseLibMain.Logger.Warn($"Recommended to add a prefix such as \"{prefix}\" to SavedProperty {prop.Name} for compatibility.");
                     }
                 }
-                
+
                 hasSavedProperty = true;
             }
 
@@ -53,8 +65,6 @@ class PostModInitPatch
                 SavedPropertiesTypeCache.InjectTypeIntoCache(type);
             }
         }
-
-        SavedSpireFieldPatch.AddFieldsSorted();
     }
 
 }

@@ -4,4 +4,64 @@
             <Visible Condition="'%(NuGetItemType)' == 'Compile' and '%(NuGetPackageId)' == 'Foo'">false</Visible>
         </Compile>
     </ItemGroup>
+
+    <!-- ═══════════════════════════════════════════════════════════════
+         Hot Reload Assembly Stamping
+         ═══════════════════════════════════════════════════════════════
+         When building in Debug mode, we stamp the assembly name with a unique
+         timestamp suffix (e.g., MyMod_hr143052789). This is required because
+         .NET's default AssemblyLoadContext rejects loading an assembly with a
+         name that's already loaded. Each rebuild produces a uniquely-named DLL
+         that the ALC treats as new.
+
+         This only runs for Debug builds. Release builds are unmodified.
+         Opt out by setting <BaseLibHotReload>false</BaseLibHotReload> in your csproj.
+    -->
+    <!--
+         Assembly name stamping is done in a PropertyGroup (not a Target) so it evaluates
+         at import time — before TargetPath resolution, before CoreCompile, before everything.
+         This ensures both the internal assembly name AND the output filename get the stamp.
+    -->
+    <PropertyGroup Condition="'$(Configuration)' == 'Debug' and '$(BaseLibHotReload)' != 'false'">
+        <_OriginalAssemblyName Condition="'$(_OriginalAssemblyName)' == ''">$(AssemblyName)</_OriginalAssemblyName>
+        <AssemblyName>$(_OriginalAssemblyName)_hr$([System.DateTime]::UtcNow.ToString("HHmmssfff"))</AssemblyName>
+    </PropertyGroup>
+
+    <!-- ═══════════════════════════════════════════════════════════════
+         Copy to Mods Folder on Build
+         ═══════════════════════════════════════════════════════════════
+         Automatically copies the built DLL, PDB (for debugger support), and
+         mod manifest to the game's mods directory after each build.
+
+         Requires Sts2Path to be set (BaseLib.csproj sets this from Steam path).
+         The mod folder name uses the original (un-stamped) assembly name so
+         all hot-reload DLLs land in the same folder.
+    -->
+    <Target Name="BaseLib_CopyToModsFolder"
+            AfterTargets="AfterBuild"
+            Condition="'$(Sts2Path)' != '' and Exists('$(Sts2Path)/mods') and '$(BaseLibSkipModsCopy)' != 'true'">
+        <PropertyGroup>
+            <_ModFolderName Condition="'$(_OriginalAssemblyName)' != ''">$(_OriginalAssemblyName)</_ModFolderName>
+            <_ModFolderName Condition="'$(_OriginalAssemblyName)' == ''">$(MSBuildProjectName)</_ModFolderName>
+            <_ModsPath>$(Sts2Path)/mods/$(_ModFolderName)/</_ModsPath>
+        </PropertyGroup>
+
+        <!-- Copy the DLL using the stamped assembly name as the filename.
+             Each build produces a uniquely-named DLL (e.g., MyMod_hr143052789.dll)
+             so it doesn't collide with the original that the game holds locked. -->
+        <Copy SourceFiles="$(TargetPath)"
+              DestinationFiles="$(_ModsPath)$(AssemblyName).dll" />
+
+        <!-- Copy PDB with matching stamped name (enables debugger breakpoints in Rider/VS) -->
+        <Copy SourceFiles="$(TargetDir)$(TargetName).pdb"
+              DestinationFiles="$(_ModsPath)$(AssemblyName).pdb"
+              Condition="Exists('$(TargetDir)$(TargetName).pdb')" />
+
+        <!-- Copy mod manifest if it exists -->
+        <Copy SourceFiles="$(MSBuildProjectDirectory)/mod_manifest.json"
+              DestinationFolder="$(_ModsPath)"
+              Condition="Exists('$(MSBuildProjectDirectory)/mod_manifest.json')" />
+
+        <Message Text="[BaseLib] Deployed to $(_ModsPath)" Importance="high" />
+    </Target>
 </Project>

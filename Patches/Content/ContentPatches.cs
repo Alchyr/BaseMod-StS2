@@ -14,9 +14,12 @@ public static class CustomContentDictionary
 {
     private static readonly Dictionary<Type, int> CustomModelCounts = []; //May log, may just remove.
     private static readonly Dictionary<Type, Type> PoolTypes = [];
-    
+
     public static readonly List<CustomAncientModel> CustomAncients = [];
-    
+
+    // Track which types were added per-assembly for hot reload cleanup
+    private static readonly Dictionary<string, List<Type>> ModelTypesByAssembly = [];
+
     static CustomContentDictionary()
     {
         PoolTypes.Add(typeof(CardPoolModel), typeof(CardModel));
@@ -37,8 +40,17 @@ public static class CustomContentDictionary
 
         int count = CustomModelCounts.GetValueOrDefault(poolAttribute.PoolType, 0);
         CustomModelCounts[poolAttribute.PoolType] = count + 1;
-        
+
         ModHelper.AddModelToPool(poolAttribute.PoolType, modelType);
+
+        // Track for hot reload cleanup
+        var asmName = modelType.Assembly.GetName().Name ?? "";
+        if (!ModelTypesByAssembly.TryGetValue(asmName, out var list))
+        {
+            list = [];
+            ModelTypesByAssembly[asmName] = list;
+        }
+        list.Add(modelType);
     }
 
     public static void AddAncient(CustomAncientModel ancient)
@@ -47,8 +59,33 @@ public static class CustomContentDictionary
         CustomModelCounts[typeof(CustomAncientModel)] = count + 1;
         CustomAncients.Add(ancient);
     }
-    
-    
+
+    /// <summary>
+    /// Remove all tracked content from a specific assembly. Used during hot reload
+    /// to clean up before re-registration from the new assembly version.
+    /// </summary>
+    internal static void RemoveByAssembly(Assembly oldAssembly)
+    {
+        var asmName = oldAssembly.GetName().Name ?? "";
+
+        // Remove tracked model types for this assembly
+        if (ModelTypesByAssembly.Remove(asmName, out var oldTypes))
+        {
+            foreach (var modelType in oldTypes)
+            {
+                var poolAttr = modelType.GetCustomAttribute<PoolAttribute>();
+                if (poolAttr != null && CustomModelCounts.ContainsKey(poolAttr.PoolType))
+                {
+                    CustomModelCounts[poolAttr.PoolType] = Math.Max(0, CustomModelCounts[poolAttr.PoolType] - 1);
+                }
+            }
+        }
+
+        // Remove ancients from old assembly
+        CustomAncients.RemoveAll(a => a.GetType().Assembly == oldAssembly);
+    }
+
+
     private static bool IsValidPool(Type modelType, Type poolType)
     {
         var basePoolType = poolType.BaseType;
@@ -135,6 +172,11 @@ class ModelDbSharedCardPoolsPatch
     {
         CustomSharedPools.Add(pool);
     }
+
+    internal static void RemoveByAssembly(Assembly asm)
+    {
+        CustomSharedPools.RemoveAll(p => p.GetType().Assembly == asm);
+    }
 }
 
 [HarmonyPatch(typeof(ModelDb), "AllSharedRelicPools", MethodType.Getter)]
@@ -152,6 +194,11 @@ class ModelDbSharedRelicPoolsPatch
     {
         customSharedPools.Add(pool);
     }
+
+    internal static void RemoveByAssembly(Assembly asm)
+    {
+        customSharedPools.RemoveAll(p => p.GetType().Assembly == asm);
+    }
 }
 
 [HarmonyPatch(typeof(ModelDb), "AllSharedPotionPools", MethodType.Getter)]
@@ -168,6 +215,11 @@ class ModelDbSharedPotionPoolsPatch
     public static void Register(CustomPotionPoolModel pool)
     {
         customSharedPools.Add(pool);
+    }
+
+    internal static void RemoveByAssembly(Assembly asm)
+    {
+        customSharedPools.RemoveAll(p => p.GetType().Assembly == asm);
     }
 }
 

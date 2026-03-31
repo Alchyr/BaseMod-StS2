@@ -1,6 +1,7 @@
 using System.Reflection;
 using System.Runtime.InteropServices;
 using BaseLib.Config;
+using BaseLib.HotReload;
 using BaseLib.Patches.Content;
 using BaseLib.Utils.NodeFactories;
 using HarmonyLib;
@@ -30,8 +31,9 @@ public static class BaseLibMain
         TheBigPatchToCardPileCmdAdd.Patch(harmony);
 
         harmony.PatchAll();
-        
+
         NodeFactory.Init();
+        HotReloadEngine.Init();
     }
 
     //Hopefully temporary fix for linux

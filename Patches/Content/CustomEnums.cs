@@ -147,11 +147,27 @@ class GetCustomLocKey
 [HarmonyPatch(typeof(ModelDb), nameof(ModelDb.Init))]
 class GenEnumValues
 {
+    // Track which fields have already been generated to avoid duplicates during hot reload
+    private static readonly HashSet<string> GeneratedFieldKeys = [];
+
+    private static string FieldKey(FieldInfo field) =>
+        $"{field.DeclaringType?.FullName}.{field.Name}";
+
     [HarmonyPrefix]
     static void FindAndGenerate()
     {
+        GenerateForTypes(ReflectionHelper.ModTypes);
+    }
+
+    /// <summary>
+    /// Generate custom enum values for the given types. Skips fields that have already
+    /// been generated (dedup for hot reload). Called at startup for all mod types,
+    /// and again during hot reload for new assembly types.
+    /// </summary>
+    internal static void GenerateForTypes(IEnumerable<Type> types)
+    {
         List<FieldInfo> customEnumFields = [];
-        foreach (var t in ReflectionHelper.ModTypes)
+        foreach (var t in types)
         {
             var fields = t.GetFields().Where(field => Attribute.IsDefined(field, typeof(CustomEnumAttribute)));
 
@@ -174,10 +190,14 @@ class GenEnumValues
                     continue;
                 }
 
+                // Skip fields already generated in a previous load
+                if (GeneratedFieldKeys.Contains(FieldKey(field)))
+                    continue;
+
                 customEnumFields.Add(field);
             }
         }
-        
+
         customEnumFields.Sort((a, b) =>
         {
             var comparison = string.Compare(a.Name, b.Name, StringComparison.Ordinal);
@@ -190,8 +210,9 @@ class GenEnumValues
             var key = CustomEnums.GenerateKey(field.FieldType);
             var t = field.DeclaringType;
             if (t == null) continue;
-            
+
             field.SetValue(null, key);
+            GeneratedFieldKeys.Add(FieldKey(field));
 
             if (field.FieldType == typeof(CardKeyword))
             {
@@ -208,20 +229,20 @@ class GenEnumValues
                         AutoKeywordText.AdditionalAfterKeywords.Add((CardKeyword) key);
                         break;
                 }
-                    
+
                 CustomKeywords.KeywordIDs.Add((int) key, new(keywordId, autoPosition));
                 continue;
             }
-            
+
             //Following code is exclusively for CustomPile
             if (field.FieldType != typeof(PileType)) continue;
-            if (!t.IsAssignableTo(typeof(CustomPile))) continue; 
-                
+            if (!t.IsAssignableTo(typeof(CustomPile))) continue;
+
             var constructor = t.GetConstructor(BindingFlags.Instance | BindingFlags.Public, []) ?? throw new Exception($"CustomPile {t.FullName} with custom PileType does not have an accessible no-parameter constructor");
-                
+
             var pileType = (PileType?)field.GetValue(null);
             if (pileType == null) throw new Exception($"Failed to be set up custom PileType in {t.FullName}");
-                
+
             CustomPiles.RegisterCustomPile((PileType) pileType, () => (CustomPile) constructor.Invoke(null));
         }
     }

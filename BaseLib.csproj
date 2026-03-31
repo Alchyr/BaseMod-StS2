@@ -98,6 +98,12 @@
     </ItemGroup>
     
     <ItemGroup>
+        <!-- Exclude the test mod from BaseLib's own build — it has its own csproj -->
+        <Compile Remove="test_hotreload_mod\**" />
+        <None Remove="test_hotreload_mod\**" />
+    </ItemGroup>
+
+    <ItemGroup>
         <None Include="$(MSBuildProjectName)\**" />
         <None Include="LICENSE.txt" />
         <None Include="project.godot" />
@@ -112,9 +118,17 @@
 
     <ItemGroup>
         <!-- For including in .nupkg for template to auto export to mods folder -->
-        <Content Condition="Exists('build\BaseLib.props')" Include="build\BaseLib.props" PackagePath="/Content/" />
         <Content Condition="Exists('build\BaseLib.pck')" Include="build\$(MSBuildProjectName).pck" PackagePath="/Content/" />
         <Content Include="$(MSBuildProjectName).json" PackagePath="/Content/" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <!--
+             Package BaseLib.props at /build/ so NuGet auto-imports it into consuming projects.
+             This gives mod projects the hot reload assembly stamping and CopyToModsFolder targets
+             for free just by referencing the BaseLib NuGet package.
+        -->
+        <None Condition="Exists('build\BaseLib.props')" Include="build\BaseLib.props" Pack="true" PackagePath="build/" />
     </ItemGroup>
     
     <Target Name="UpdateManifestVersion" BeforeTargets="BeforeBuild">

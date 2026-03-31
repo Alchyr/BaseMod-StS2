@@ -36,21 +36,30 @@ class ModelLocPatch
     [HarmonyPostfix]
     static void AddModelLoc(Dictionary<ModelId, AbstractModel> ____contentById)
     {
-        foreach (KeyValuePair<ModelId, AbstractModel> content in ____contentById)
+        InjectLocalization(____contentById);
+    }
+
+    /// <summary>
+    /// Inject localization entries for all ILocalizationProvider models in the given dictionary.
+    /// Called at startup via Harmony postfix and during hot reload for re-injection.
+    /// </summary>
+    internal static void InjectLocalization(IEnumerable<KeyValuePair<ModelId, AbstractModel>> content)
+    {
+        foreach (var entry in content)
         {
-            if (content.Value is ILocalizationProvider locProvider)
+            if (entry.Value is ILocalizationProvider locProvider)
             {
                 var loc = locProvider.Localization;
                 if (loc == null) continue;
-                
+
                 var table = locProvider.LocTable
-                               ?? CategoryToLocTable.GetValueOrDefault(content.Key.Category, null)
+                               ?? CategoryToLocTable.GetValueOrDefault(entry.Key.Category, null)
                                ?? throw new Exception("Override LocTable in your ILocalizationProvider.");
                 var locTable = LocManager.Instance.GetTable(table);
-                var dict = LocDictionaryField.GetValue(locTable) as Dictionary<string, string> 
+                var dict = LocDictionaryField.GetValue(locTable) as Dictionary<string, string>
                            ?? throw new Exception("Failed to get localization dictionary.");
-                
-                string key = content.Key.Entry;
+
+                string key = entry.Key.Entry;
                 foreach (var locEntry in loc)
                 {
                     dict[$"{key}.{locEntry.Item1}"] = locEntry.Item2;

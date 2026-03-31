@@ -35,6 +35,17 @@ public abstract class CustomOrbModel : OrbModel, ICustomModel, ILocalizationProv
     {
         RegisteredOrbs.Add(this);
     }
+
+    /// <summary>
+    /// Remove all orbs belonging to the given assembly and clear the random pool
+    /// cache so it gets rebuilt on next access. Called during hot reload cleanup.
+    /// </summary>
+    internal static void RemoveByAssembly(System.Reflection.Assembly asm)
+    {
+        RegisteredOrbs.RemoveAll(o => o.GetType().Assembly == asm);
+        // Force the random pool cache to rebuild with the new set of orbs
+        CustomOrbRandomPool.ClearCache();
+    }
     
     /// <summary>
     /// Override this to define localization directly in your class.
@@ -91,6 +102,9 @@ class CustomOrbCreateSprite
 class CustomOrbRandomPool
 {
     private static List<OrbModel>? _eligibleCache;
+
+    /// <summary>Null the cache so it gets rebuilt from the current RegisteredOrbs list.</summary>
+    internal static void ClearCache() => _eligibleCache = null;
 
     static void Postfix(Rng rng, ref OrbModel __result)
     {

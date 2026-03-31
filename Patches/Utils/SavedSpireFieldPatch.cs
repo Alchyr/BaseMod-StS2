@@ -13,6 +13,15 @@ static class SavedSpireFieldPatch
     public static void Register<TKey, TVal>(SavedSpireField<TKey, TVal> field)
         where TKey : class => RegisteredFields.Add(field);
 
+    /// <summary>
+    /// Remove all saved spire fields whose TargetType belongs to the given assembly.
+    /// Called during hot reload before re-processing types from the new assembly.
+    /// </summary>
+    internal static void RemoveByAssembly(Assembly oldAssembly)
+    {
+        RegisteredFields.RemoveAll(f => f.TargetType.Assembly == oldAssembly);
+    }
+
     private static IEnumerable<ISavedSpireField> GetFieldsForModel(object model) =>
         RegisteredFields.Where(f => f.TargetType.IsInstanceOfType(model));
     
