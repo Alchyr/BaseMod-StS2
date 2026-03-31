@@ -6,7 +6,7 @@ using MegaCrit.Sts2.Core.Localization.DynamicVars;
 using MegaCrit.Sts2.Core.Models;
 using MegaCrit.Sts2.Core.Timeline;
 
-namespace BaseLib.Patches.Utils;
+namespace BaseLib.Patches.Localization;
 
 [HarmonyPatch(typeof(ModelDb), nameof(ModelDb.Init))]
 class ModelLocPatch

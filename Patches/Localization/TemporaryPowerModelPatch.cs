@@ -3,10 +3,10 @@ using HarmonyLib;
 using MegaCrit.Sts2.Core.Localization;
 using MegaCrit.Sts2.Core.Models;
 
-namespace BaseLib.Patches.Features;
+namespace BaseLib.Patches.Localization;
 
 [HarmonyPatch(typeof(PowerModel), "AddDumbVariablesToDescription")]
-public class TemporaryPowerModelPatch
+class TemporaryPowerModelPatch
 {
     [HarmonyPostfix]
     static void Postfix(PowerModel __instance, LocString description)
