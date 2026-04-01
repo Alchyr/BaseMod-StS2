@@ -7,8 +7,14 @@ namespace BaseLib.Utils;
 /// </summary>
 public static class CustomAnimation
 {
-    private static SpireField<Node, Func<string[], bool>> _animHandler = new(() => null);
+    private static readonly SpireField<Node, Func<string[], bool>> _animHandler = new(() => null);
     
+    /// <summary>
+    /// Returns true if any custom animation source exists.
+    /// </summary>
+    /// <param name="n"></param>
+    /// <param name="tryAnimNames"></param>
+    /// <returns></returns>
     public static bool PlayCustomAnimation(Node n, params string[] tryAnimNames)
     {
         if (_animHandler[n] == null)

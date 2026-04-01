@@ -66,6 +66,7 @@ public record CardLoc(string Title, string Description, params (string, string)[
 /// <summary>
 /// For use with ILocalizationProvider.<seealso cref="ILocalizationProvider"/>
 /// Localization for a character.
+/// Due to complexity, not recommended to define character localization this way.
 /// </summary>
 public record CharacterLoc(string Title, string TitleObject, string Description, 
     string PronounObject, string PronounSubject, string PronounPossessive, string PossessiveAdjective,

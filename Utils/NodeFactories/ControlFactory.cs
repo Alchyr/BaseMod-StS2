@@ -14,21 +14,17 @@ internal class ControlFactory : NodeFactory<Control>
         {
             case Texture2D img:
                 var imgSize = img.GetSize();
-                
-                var control = new Control()
-                {
-                    Name = img.ResourcePath
-                };
 
-                var visuals = new Sprite2D()
+                var visuals = new TextureRect()
                 {
-                    Name = "Image",
+                    Name = img.ResourcePath,
+                    Size = imgSize,
                     Texture = img,
-                    Position = new(-imgSize.X * 0.5f, -imgSize.Y * 0.5f)
+                    PivotOffset = imgSize / 2,
+                    ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize
                 };
-                control.AddChild(visuals);
-
-                return control;
+                
+                return visuals;
         }
 
         return base.CreateBareFromResource(resource);

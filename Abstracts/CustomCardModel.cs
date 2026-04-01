@@ -57,25 +57,35 @@ class CustomCardPortraitPngPath
     {
         if (__instance is not CustomCardModel customCard) return true;
         
-        __result = customCard.CustomPortraitPath;
-        return __result == null;
+        if (customCard.CustomPortraitPath != null) {
+            __result = customCard.CustomPortraitPath;
+        } else {
+            return true;
+        }
+        return false;
     }
 }
 
-[HarmonyPatch(typeof(CardModel), "Portrait", MethodType.Getter)]
+[HarmonyPatch(typeof(CardModel), nameof(CardModel.Portrait), MethodType.Getter)]
 class CustomCardPortrait
 {
     [HarmonyPrefix]
     static bool UseAltTexture(CardModel __instance, ref Texture2D? __result)
     {
         if (__instance is not CustomCardModel customCard) return true;
-        
-        __result = customCard.CustomPortrait ?? ResourceLoader.Load<Texture2D>(customCard.CustomPortraitPath);
-        return __result == null;
+
+        if (customCard.CustomPortrait != null) {
+            __result = customCard.CustomPortrait;
+        } else if (customCard.CustomPortraitPath != null) {
+            __result = ResourceLoader.Load<Texture2D>(customCard.CustomPortraitPath);
+        } else {
+            return true;
+        }
+        return false;
     }
 }
 
-[HarmonyPatch(typeof(CardModel), "PortraitPath", MethodType.Getter)]
+[HarmonyPatch(typeof(CardModel), nameof(CardModel.PortraitPath), MethodType.Getter)]
 class CustomCardPortraitPath
 {
     [HarmonyPrefix]
@@ -83,11 +93,14 @@ class CustomCardPortraitPath
     {
         if (__instance is not CustomCardModel customCard) return true;
 
-        if (customCard.CustomPortrait == null) {
-            __result = ResourceLoader.Load<Texture2D>(customCard.CustomPortraitPath).ResourcePath;
-        } else {
+        if (customCard.CustomPortrait != null) {
             __result = customCard.CustomPortrait.ResourcePath;
+        } else if (customCard.CustomPortraitPath != null) {
+            __result = ResourceLoader.Load<Texture2D>(customCard.CustomPortraitPath).ResourcePath;
+            // Confusingly CustomPortraitPath is a png
+        } else {
+            return true;
         }
-        return __result == null;
+        return false;
     }
 }
