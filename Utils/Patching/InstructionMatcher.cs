@@ -92,7 +92,8 @@ public class InstructionMatcher() : IMatcher
 
         public bool OperandMatch(CodeInstruction matchTest)
         {
-            return (OperandMatchPredicate?.Invoke(matchTest.operand) == true) || (Operand == null) || (Equals(ComparisonOperand(matchTest), Operand)) || Equals(matchTest.operand, Operand);
+            return (OperandMatchPredicate?.Invoke(matchTest.operand) != false) 
+                && (Operand == null || Equals(ComparisonOperand(matchTest), Operand) || Equals(matchTest.operand, Operand));
         }
         
         private object ComparisonOperand(CodeInstruction codeInstruction)

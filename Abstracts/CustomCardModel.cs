@@ -22,7 +22,36 @@ public abstract class CustomCardModel : CardModel, ICustomModel, ILocalizationPr
         if (autoAdd) CustomContentDictionary.AddModel(GetType());
     }
 
+    /// <summary>
+    /// Allows a custom texture to be used as the card's back frame.
+    /// A new texture loaded through ResourceLoader.Load&lt;Texture2D> should be returned.
+    /// </summary>
     public virtual Texture2D? CustomFrame => null;
+
+    private bool _initializedFrameMaterial = false;
+    private Material? _frameMaterial = null;
+
+    /// <summary>
+    /// Returns a custom ShaderMaterial defined by CreateCustomFrameMaterial.
+    /// </summary>
+    public Material? CustomFrameMaterial
+    {
+        get
+        {
+            if (!_initializedFrameMaterial)
+            {
+                _frameMaterial = CreateCustomFrameMaterial;
+                _initializedFrameMaterial = true;
+            }
+            return _frameMaterial;
+        }
+    }
+    
+    /// <summary>
+    /// Override this to use a custom ShaderMaterial only for this card.<seealso cref="BaseLib.Utils.ShaderUtils.GenerateHsv" />
+    /// </summary>
+    public virtual Material? CreateCustomFrameMaterial => null;
+    
     public virtual string? CustomPortraitPath => null;
     public virtual Texture2D? CustomPortrait => null;
     public virtual List<(string, string)>? Localization => null;
@@ -34,18 +63,28 @@ class CustomCardFrame
     [HarmonyPrefix]
     static bool UseAltTexture(CardModel __instance, ref Texture2D? __result)
     {
-        if (__instance is CustomCardModel customCard)
-        {
-            __result = customCard.CustomFrame;
-            if (__result != null) return false;
+        if (__instance is not CustomCardModel customCard) return true;
+        
+        __result = customCard.CustomFrame;
+        if (__result != null) return false;
 
-            if (__instance.Pool is CustomCardPoolModel customCardPool)
-            {
-                __result = customCardPool.CustomFrame(customCard);
-                if (__result != null) return false;
-            }
-        }
-        return true;
+        if (__instance.Pool is not CustomCardPoolModel customCardPool) return true;
+        
+        __result = customCardPool.CustomFrame(customCard);
+        return __result == null;
+    }
+}
+
+[HarmonyPatch(typeof(CardModel), nameof(CardModel.FrameMaterial), MethodType.Getter)]
+class CustomCardFrameMaterial
+{
+    [HarmonyPrefix]
+    static bool UseAltMaterial(CardModel __instance, ref Material? __result)
+    {
+        if (__instance is not CustomCardModel customCard) return true;
+        
+        __result = customCard.CustomFrameMaterial;
+        return __result == null;
     }
 }
 
@@ -97,7 +136,6 @@ class CustomCardPortraitPath
             __result = customCard.CustomPortrait.ResourcePath;
         } else if (customCard.CustomPortraitPath != null) {
             __result = ResourceLoader.Load<Texture2D>(customCard.CustomPortraitPath).ResourcePath;
-            // Confusingly CustomPortraitPath is a png
         } else {
             return true;
         }

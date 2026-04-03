@@ -1,9 +1,9 @@
 ﻿using BaseLib.Extensions;
-using BaseLib.Utils;
 using Godot;
 using HarmonyLib;
 using MegaCrit.Sts2.addons.mega_text;
 using MegaCrit.Sts2.Core.Assets;
+using MegaCrit.Sts2.Core.ControllerInput;
 using MegaCrit.Sts2.Core.Helpers;
 using MegaCrit.Sts2.Core.Localization;
 using MegaCrit.Sts2.Core.Nodes.CommonUi;
@@ -12,173 +12,260 @@ using MegaCrit.Sts2.Core.Nodes.Screens.MainMenu;
 
 namespace BaseLib.Config.UI;
 
-[HarmonyPatch(typeof(NMainMenuSubmenuStack), nameof(NMainMenuSubmenuStack.GetSubmenuType), typeof(Type))]
-public static class InjectModConfigSubmenuPatch
-{
-    private static readonly SpireField<NMainMenuSubmenuStack, NModConfigSubmenu> SubmenuField = new(CreateSubmenu);
-
-    private static NModConfigSubmenu CreateSubmenu(NMainMenuSubmenuStack stack)
-    {
-        var menu = new NModConfigSubmenu();
-        menu.Visible = false;
-        stack.AddChildSafely(menu);
-        return menu;
-    }
-
-    public static bool Prefix(NMainMenuSubmenuStack __instance, Type type, ref NSubmenu __result)
-    {
-        if (type != typeof(NModConfigSubmenu)) return true;
-
-        __result = SubmenuField.Get(__instance)!;
-        return false;
-    }
-}
-
 public partial class NModConfigSubmenu : NSubmenu
 {
+    private NBackButton? _backButton;
+    private NNativeScrollableContainer _leftScrollArea;
+    private VBoxContainer _modListVbox;
+    private Control _modListPanel;
+    private MegaRichTextLabel _modListTitle;
+
+    private NNativeScrollableContainer _rightScrollArea;
     private VBoxContainer? _optionContainer;
-    private NScrollableContainer _scrollContainer;
     private Control _contentPanel;
     private MegaRichTextLabel _modTitle;
-    private NConfigOpenerButton? _opener;
     private Tween? _fadeInTween;
 
     private ModConfig? _currentConfig;
     private double _saveTimer = -1;
     private const double AutosaveDelay = 5;
+    private bool _isUsingController;
+    private bool _lastFocusOnRight;
 
-    private const float ContentWidth = 1012f; // Same as the base game
-    private const float ClipperTopOffset = 187f;
     private const float ModTitleHeight = 90f;
-    private const float MinPadding = 30f;
+    private const float TopOffset = ModTitleHeight + 30f;
 
-    protected override Control InitialFocusedControl => FindFirstFocusable(_optionContainer) ?? _contentPanel;
+    private const float ModListPosition = 180f;
+    private const float ModListWidth = 360f;
+
+    private const float MaxRightSideWidth = 1200f; // Dynamically sized, but not above this (hurts UW readability)
+
+    // Read when the screen is shown *and* after a modal (e.g. confirm Restore Defaults). Ensure we return
+    // to the same side that was active prior.
+    protected override Control? InitialFocusedControl =>
+        _lastFocusOnRight ? FindFirstFocusable(_optionContainer) : GetActiveModButton();
 
     public NModConfigSubmenu()
     {
-        // Basic node structure:
-        // NModConfigSubmenu > _scrollContainer > mask > clipper > _contentPanel > _optionContainer
-        // ... where _optionContainer is passed to the mod's ModConfig
-        AnchorRight = 1f;
-        AnchorBottom = 1f;
+        SetAnchorsPreset(LayoutPreset.FullRect);
         GrowHorizontal = GrowDirection.Both;
         GrowVertical = GrowDirection.Both;
 
-        _scrollContainer = new NScrollableContainer
+        _leftScrollArea = new NNativeScrollableContainer(TopOffset);
+        _modListPanel = new Control
         {
-            Name = "ScrollContainer",
-            ClipChildren = ClipChildrenMode.Only,
-            AnchorRight = 1f,
-            AnchorBottom = 1f,
-            GrowHorizontal = GrowDirection.Both,
-            GrowVertical = GrowDirection.Both,
+            Name = "ModListContent",
+            MouseFilter = MouseFilterEnum.Ignore
         };
+        _modListPanel.SetAnchorsPreset(LayoutPreset.FullRect);
+        AddChild(_leftScrollArea);
 
-        // Verbose, but basically the same as the fading gradient in the original settings scene
-        var mask = new TextureRect
-        {
-            Name = "Mask",
-            ClipChildren = ClipChildrenMode.Only,
-            AnchorRight = 1f,
-            AnchorBottom = 1f,
-            GrowHorizontal = GrowDirection.Both,
-            GrowVertical = GrowDirection.Both,
-            MouseFilter = MouseFilterEnum.Ignore,
-            Texture = new GradientTexture2D
-            {
-                FillFrom = new Vector2(0f, 1f),
-                FillTo = Vector2.Zero,
-                Gradient = new Gradient
-                {
-                    // Note: these are ordered bottom-to-top!
-                    Offsets = [0f, 0.04f, 0.805f, 0.827f],
-                    Colors =
-                    [
-                        new Color(1f, 1f, 1f, 0f),
-                        new Color(1f, 1f, 1f),
-                        new Color(1f, 1f, 1f),
-                        new Color(1f, 1f, 1f, 0f)
-                    ],
-                },
-            },
-        };
-
-        var clipper = new Control
-        {
-            Name = "Clipper",
-            ClipContents = true,
-            AnchorRight = 1f,
-            AnchorBottom = 1f,
-            OffsetTop = ClipperTopOffset,
-            GrowHorizontal = GrowDirection.Both,
-            GrowVertical = GrowDirection.Both,
-            MouseFilter = MouseFilterEnum.Ignore,
-        };
-        mask.AddChild(clipper);
-
+        _rightScrollArea = new NNativeScrollableContainer(TopOffset);
         _contentPanel = new Control
         {
             Name = "ModConfigContent",
-            AnchorLeft = 0.5f,
-            AnchorRight = 0.5f,
-            OffsetLeft = -ContentWidth / 2,
-            OffsetTop = 24f,
-            OffsetRight = ContentWidth / 2,
-            GrowHorizontal = GrowDirection.Both,
             MouseFilter = MouseFilterEnum.Ignore,
         };
-        clipper.AddChild(_contentPanel);
+        _contentPanel.SetAnchorsPreset(LayoutPreset.TopLeft);
+        _contentPanel.CustomMinimumSize = new Vector2(MaxRightSideWidth, 0);
+        AddChild(_rightScrollArea);
 
-        var scrollbar = PreloadManager.Cache.GetScene(SceneHelper.GetScenePath("ui/scrollbar"))
-            .Instantiate<NScrollbar>();
-        scrollbar.Name = "Scrollbar";
-        const float gap = 54f;
-        const float width = 48f;
-        scrollbar.AnchorLeft = 0.5f;
-        scrollbar.AnchorRight = 0.5f;
-        scrollbar.AnchorTop = 0f;
-        scrollbar.AnchorBottom = 1f;
-        scrollbar.OffsetLeft = ContentWidth / 2 + gap;
-        scrollbar.OffsetRight = ContentWidth / 2 + gap + width;
+        _modListTitle = CreateTitleControl("ModListTitle", "[center]Mods[/center]", 0f);
+        _modListTitle.OffsetLeft = ModListPosition;
+        _modListTitle.OffsetRight = ModListPosition + ModListWidth - NNativeScrollableContainer.ScrollbarGutterWidth;
 
-        scrollbar.OffsetTop = ClipperTopOffset + 32f;
-        scrollbar.OffsetBottom = -64f;
-
-        _scrollContainer.AddChild(scrollbar);
-        _scrollContainer.AddChild(mask);
-
-        // Autosize is on, but we need a value here
-        _modTitle = ModConfig.CreateRawLabelControl("[center]Unknown mod name[/center]", 36);
-        _modTitle.Name = "ModTitle";
-        _modTitle.AutoSizeEnabled = true;
-        _modTitle.MaxFontSize = 64;
-        _modTitle.CustomMinimumSize = new Vector2(ContentWidth, ModTitleHeight);
-
-        _modTitle.SetAnchorsPreset(LayoutPreset.TopWide);
-        _modTitle.OffsetBottom = ClipperTopOffset - 10;
-        _modTitle.OffsetTop = _modTitle.OffsetBottom - ModTitleHeight;
+        _modTitle = CreateTitleControl("ModTitle", "[center]Unknown mod name[/center]", 0f);
+        _modListVbox = new VBoxContainer();
     }
 
     public override void _Ready()
     {
-        AddChild(_scrollContainer);
         AddChild(_modTitle);
-        _scrollContainer.SetContent(_contentPanel);
-        _scrollContainer.DisableScrollingIfContentFits();
+        AddChild(_modListTitle);
 
-        var backButton = PreloadManager.Cache.GetScene(SceneHelper.GetScenePath("ui/back_button")).Instantiate<NBackButton>();
-        backButton.Name = "BackButton";
-        AddChild(backButton);
+        _modListPanel.AddChild(_modListVbox);
+        _modListPanel.SetAnchorsPreset(LayoutPreset.TopLeft);
+
+        InitializeModList();
+
+        _modListVbox.MinimumSizeChanged += () => {
+            _modListPanel.CustomMinimumSize = new Vector2(_leftScrollArea.AvailableContentWidth, _modListVbox.GetMinimumSize().Y);
+        };
+
+        _leftScrollArea.AttachContent(_modListPanel);
+        _leftScrollArea.DisableScrollingIfContentFits();
+        _rightScrollArea.AttachContent(_contentPanel);
+        _rightScrollArea.DisableScrollingIfContentFits();
+
+        _backButton = PreloadManager.Cache.GetScene(SceneHelper.GetScenePath("ui/back_button"))
+            .Instantiate<NBackButton>();
+        _backButton.Name = "BackButton";
+        AddChild(_backButton);
+
+        _isUsingController = NControllerManager.Instance?.IsUsingController ?? false;
 
         ConnectSignals();
         GetViewport().Connect(Viewport.SignalName.SizeChanged, Callable.From(RefreshSize));
+        NControllerManager.Instance?.Connect(NControllerManager.SignalName.MouseDetected,
+            Callable.From(InputTypeChanged));
+        NControllerManager.Instance?.Connect(NControllerManager.SignalName.ControllerDetected,
+            Callable.From(InputTypeChanged));
     }
 
-    public void LoadModConfig(ModConfig config, NConfigOpenerButton opener)
+    private void InitializeModList()
     {
-        if (_currentConfig != null) _currentConfig.ConfigChanged -= OnConfigChanged;
+        var selfNodePath = new NodePath(".");
+
+        foreach (var modConfig in ModConfigRegistry.GetAll().Where(mod => mod.HasVisibleSettings()))
+        {
+            var modName = GetModTitle(modConfig);
+            var modButton = new NModListButton(modName);
+            _modListVbox.AddChild(modButton);
+
+            modButton.Connect(NClickableControl.SignalName.Released, Callable.From<NModListButton>(button =>
+                ModButtonClicked(button, modConfig)));
+
+            modButton.Connect(NClickableControl.SignalName.Focused,
+                Callable.From<NModListButton>(ModButtonFocused));
+
+            modButton.FocusNeighborLeft = selfNodePath;
+            modButton.FocusNeighborRight = selfNodePath;
+        }
+
+        // Set up dummies to test scrolling, etc.
+        // for (var i = 1; i <= 15; i++) { var btn = new NModListButton($"Test mod {i}"); _modListVbox.AddChild(btn); }
+
+        // Set up focus neighbors for controller navigation; connect top -> bottom and bottom -> top
+        var mods = _modListVbox.GetChildren();
+        var firstMod = mods.First() as NModListButton;
+        var lastMod = mods.Last() as NModListButton;
+        if (firstMod != null) firstMod.FocusNeighborTop   = firstMod.GetPathTo(lastMod);
+        if (lastMod != null)  lastMod.FocusNeighborBottom = lastMod.GetPathTo(firstMod);
+
+        // Add spacers due to the fade effect
+        var topSpacer = new Control { CustomMinimumSize = new Vector2(0, 20) };
+        _modListVbox.AddChild(topSpacer);
+        _modListVbox.MoveChild(topSpacer, 0);
+        _modListVbox.AddChild(new Control { CustomMinimumSize = new Vector2(0, 24) });
+    }
+
+    private NModListButton? GetActiveModButton()
+    {
+        if (_currentConfig == null) return null;
+        foreach (var button in _modListPanel.GetChild(0).GetChildren())
+        {
+            if (button is NModListButton listButton && listButton.ModName == GetModTitle(_currentConfig))
+                return listButton;
+        }
+
+        return null;
+    }
+
+    private void ModButtonClicked(NModListButton button, ModConfig modConfig)
+    {
+        LoadModConfig(modConfig);
+
+        if (!_isUsingController) return;
+
+        SetBackButtonVisible(false);
+        button.SetHotkeyIconVisible(true);
+
+        Callable.From(() => { FindFirstFocusable(_optionContainer)?.TryGrabFocus(); })
+            .CallDeferred();
+        _lastFocusOnRight = true;
+    }
+
+    private void ModButtonFocused(NModListButton button)
+    {
+        _lastFocusOnRight = false;
+        SetBackButtonVisible(true);
+    }
+
+    private void FocusModList()
+    {
+        SetBackButtonVisible(true);
+
+        foreach (var modButton in _modListVbox.GetChildren())
+        {
+            if (modButton is NModListButton listButton)
+                listButton.SetHotkeyIconVisible(false);
+        }
+
+        // Only relevant for controllers, but returns if a controller isn't being used
+        GetActiveModButton()?.TryGrabFocus();
+    }
+
+    private void SetBackButtonVisible(bool visible)
+    {
+        if (_backButton == null) return;
+
+        if (!visible) _backButton.Disable();
+        else
+        {
+            // An early return in NClickableControl.Enable() causes a desync issue where _isEnabled is true, but the
+            // button isn't enabled/visible. Bypass the return and *actually* enable the button.
+            var enabledField = AccessTools.Field(typeof(NBackButton), "_isEnabled");
+            if (enabledField == null)
+            {
+                BaseLibMain.Logger.Error("_isEnabled field not found in NBackButton; NModConfigSubmenu needs to be fixed");
+                return;
+            }
+            enabledField.SetValue(_backButton, false);
+            _backButton.Enable();
+        }
+    }
+
+    private void SetHighlightedModButton(ModConfig config)
+    {
+        foreach (var button in _modListPanel.GetChild(0).GetChildren())
+        {
+            if (button is NModListButton listButton)
+                listButton.SetActiveState(listButton.ModName == GetModTitle(config));
+        }
+
+        // TODO: scroll to ensure button is visible -- doesn't seem possible at the moment without custom code
+    }
+
+    private void InputTypeChanged()
+    {
+        _isUsingController = NControllerManager.Instance?.IsUsingController ?? false;
+        _lastFocusOnRight = false;
+        FocusModList();
+    }
+
+    public override void _Input(InputEvent @event)
+    {
+        // Handle moving from the mod config list back to the mod list on back (e.g. B on Xbox controllers)
+        base._Input(@event);
+        if (_backButton?.IsEnabled == true) return;
+
+        if (!@event.IsActionReleased(MegaInput.cancel) &&
+            !@event.IsActionReleased(MegaInput.pauseAndBack) &&
+            !@event.IsActionReleased(MegaInput.back)) return;
+
+        // Ensure we're not in a modal dialog (such as Restore Defaults), on-screen keyboard, etc. that should handle this
+        var focusOwner = GetViewport().GuiGetFocusOwner();
+        if (focusOwner == null || _optionContainer?.IsAncestorOf(focusOwner) != true)
+        {
+            return;
+        }
+
+        FocusModList();
+        AcceptEvent();
+    }
+
+    private void LoadModConfig(ModConfig config)
+    {
+        if (config.ModId != null)
+            BaseLibConfig.LastModConfigModId = config.ModId;
+
+        if (_optionContainer != null || _currentConfig != null)
+            SaveAndClearCurrentMod();
+
         _currentConfig = config;
-        _opener = opener;
+        config.ConfigChanged += OnConfigChanged;
+        SetHighlightedModButton(config);
+        _lastFocusOnRight = false;
 
         // Recreate the container to ensure the previous mod can't change something persistent by mistake
         _optionContainer = CreateOptionContainer();
@@ -186,7 +273,6 @@ public partial class NModConfigSubmenu : NSubmenu
 
         try
         {
-            config.ConfigChanged += OnConfigChanged;
             config.SetupConfigUI(_optionContainer);
         }
         catch (Exception e)
@@ -202,17 +288,13 @@ public partial class NModConfigSubmenu : NSubmenu
 
         try
         {
-            SetModTitle(config);
+            var title = $"[center]{GetModTitle(config)}[/center]";
+            _modTitle.SetTextAutoSize(title);
+
             RefreshSize();
-            _scrollContainer.DisableScrollingIfContentFits();
-            _scrollContainer.InstantlyScrollToTop();
+            _rightScrollArea.InstantlyScrollToTop();
 
             ModConfig.ShowAndClearPendingErrors();
-
-            // Note: TryGrabFocus returns if a controller isn't being used
-            Callable.From(
-                () => FindFirstFocusable(_optionContainer)?.TryGrabFocus()
-            ).CallDeferred();
         }
         catch (Exception e)
         {
@@ -227,9 +309,9 @@ public partial class NModConfigSubmenu : NSubmenu
     {
         var container = new VBoxContainer {
             Name = "VBoxContainer",
-            CustomMinimumSize = new Vector2(ContentWidth, 0f),
+            CustomMinimumSize = new Vector2(0f, 0f),
             AnchorRight = 1f,
-            GrowHorizontal = GrowDirection.Both,
+            GrowHorizontal = GrowDirection.End,
             MouseFilter = MouseFilterEnum.Ignore,
         };
         container.AddChild(new Control { CustomMinimumSize = new Vector2(0, 16) });
@@ -238,47 +320,122 @@ public partial class NModConfigSubmenu : NSubmenu
         return container;
     }
 
-    private void SetModTitle(ModConfig config)
+    private static MegaRichTextLabel CreateTitleControl(string name, string defaultText, float minimumWidth)
     {
-        var fallbackTitle = config.GetType().GetRootNamespace();
-        if (string.IsNullOrWhiteSpace(fallbackTitle)) fallbackTitle = "Unknown mod name";
+        var title = ModConfig.CreateRawLabelControl(defaultText, 36);
+        title.Name = name;
+        title.AutoSizeEnabled = true;
+        title.MaxFontSize = 64;
+        title.CustomMinimumSize = new Vector2(minimumWidth, ModTitleHeight);
 
+        title.SetAnchorsPreset(LayoutPreset.TopLeft);
+        title.OffsetBottom = TopOffset - 10;
+        title.OffsetTop = title.OffsetBottom - ModTitleHeight;
+
+        return title;
+    }
+
+    private static string GetModTitle(ModConfig config)
+    {
         var locKey = $"{config.ModPrefix[..^1]}.mod_title";
         var locStr = LocString.GetIfExists("settings_ui", locKey);
-        if (locStr == null)
-        {
-            ModConfig.ModConfigLogger.Warn(
-                $"No {locKey} found in localization table, using mod namespace {fallbackTitle} as title");
-        }
+        if (locStr != null)
+            return locStr.GetFormattedText();
 
-        var titleText = locStr?.GetFormattedText() ?? fallbackTitle;
-        _modTitle.SetTextAutoSize($"[center]{titleText}[/center]");
+        ModConfig.ModConfigLogger.Warn($"No {locKey} found in localization table, using fallback title");
+
+        var fallbackTitle = config.GetType().GetRootNamespace();
+        if (string.IsNullOrWhiteSpace(fallbackTitle))
+            fallbackTitle = LocString.GetIfExists("settings_ui", "BASELIB-UNKNOWN_MOD_NAME")!.GetFormattedText();
+
+        return fallbackTitle;
     }
 
     private void RefreshSize()
     {
         if (_optionContainer == null) return;
-        var clipperSize = _contentPanel.GetParent<Control>().Size;
-        var requiredHeight = _optionContainer.GetMinimumSize().Y;
-        var paddedHeight = requiredHeight + MinPadding;
 
-        // Emulate the game's menus: add padding below if scrolling is (almost) needed
-        if (paddedHeight >= clipperSize.Y)
+        var (screenWidth, screenHeight) = GetViewportRect().Size;
+
+        // Handle the left hand side (mod list)
+        _leftScrollArea.Position = new Vector2(ModListPosition, 0);
+        _leftScrollArea.Size = new Vector2(ModListWidth, screenHeight);
+
+        var leftContentWidth = _leftScrollArea.AvailableContentWidth;
+
+        _modListPanel.CustomMinimumSize = new Vector2(leftContentWidth, _modListPanel.CustomMinimumSize.Y);
+        _modListVbox.CustomMinimumSize = new Vector2(leftContentWidth, _modListVbox.CustomMinimumSize.Y);
+        _modListVbox.Size = new Vector2(leftContentWidth, _modListVbox.Size.Y);
+
+        // The rest of this method handles the right side spacing. It's complex, but behaves well with any aspect ratio.
+
+        const float minLeftGap = 24f;
+        const float minRightGap = 32f;
+        const float modListEnd = ModListPosition + ModListWidth;
+        const float scrollbarGutter = 60f; // Space reserved for the scrollbar
+        const float sliderClippingFix = 8f; // Sliders can draw slightly out of bounds and clip when maxed out
+
+        var totalAvailableSpace = screenWidth - modListEnd;
+
+        var maxSettingsWidth = MaxRightSideWidth - scrollbarGutter - sliderClippingFix;
+        var spaceForSettings = totalAvailableSpace - minLeftGap - minRightGap - scrollbarGutter - sliderClippingFix;
+        var actualSettingsWidth = Mathf.Min(spaceForSettings, maxSettingsWidth);
+
+        var leftoverSpace = totalAvailableSpace - actualSettingsWidth - scrollbarGutter - sliderClippingFix;
+        var unallocatedSpace = leftoverSpace - minLeftGap - minRightGap;
+
+        var extraScrollbarSpacing = 0f;
+        var centeringOffset = 0f;
+
+        if (unallocatedSpace > 0)
         {
-            paddedHeight += clipperSize.Y * 0.3f;
+            // First, give breathing room to the scrollbar
+            extraScrollbarSpacing = Mathf.Min(unallocatedSpace, 64f);
+            unallocatedSpace -= extraScrollbarSpacing;
+
+            // Then use whatever is left to center the entire block
+            centeringOffset = unallocatedSpace / 2f;
         }
 
-        _contentPanel.CustomMinimumSize = new Vector2(ContentWidth, paddedHeight);
-        _contentPanel.Size = new Vector2(_contentPanel.Size.X, 0); // Force reset to new minimum height
-        _optionContainer.Size = new Vector2(ContentWidth, requiredHeight);
-        _scrollContainer.DisableScrollingIfContentFits();
-    }
+        var contentPosition = modListEnd + minLeftGap + centeringOffset;
+        var containerWidth = actualSettingsWidth + extraScrollbarSpacing + scrollbarGutter + sliderClippingFix;
 
+        // Position and size the content area
+        _rightScrollArea.Position = new Vector2(contentPosition, 0);
+        _rightScrollArea.Size = new Vector2(containerWidth, screenHeight);
+
+        // Emulate the game and add extra space at the bottom if scrolling is (almost, due to the 30f padding) needed
+        var clipperSize = _contentPanel.GetParent<Control>().Size;
+        var requiredHeight = _optionContainer.GetMinimumSize().Y;
+        var paddedHeight = requiredHeight + 30f;
+
+        if (paddedHeight >= clipperSize.Y)
+            paddedHeight += clipperSize.Y * 0.3f;
+
+        // Update the internal container sizes, accounting for the scrollbar area
+        var rightContentWidth = _rightScrollArea.AvailableContentWidth;
+        _contentPanel.CustomMinimumSize = new Vector2(rightContentWidth, paddedHeight);
+        _contentPanel.Size = new Vector2(rightContentWidth, paddedHeight);
+
+        _optionContainer.CustomMinimumSize = new Vector2(actualSettingsWidth, requiredHeight);
+        _optionContainer.Size = new Vector2(actualSettingsWidth, requiredHeight);
+
+        // Force center the mod title over the actual settings
+        _modTitle.OffsetLeft = contentPosition;
+        _modTitle.OffsetRight = contentPosition + actualSettingsWidth;
+        _modTitle.CustomMinimumSize = new Vector2(actualSettingsWidth, ModTitleHeight);
+    }
     protected override void OnSubmenuShown()
     {
         base.OnSubmenuShown();
 
         _saveTimer = -1;
+
+        // Load the most recent config, or default to BaseLib
+        var baseLibConfig = ModConfigRegistry.Get<BaseLibConfig>()!;
+        var lastModId = BaseLibConfig.LastModConfigModId;
+        var lastMod = !string.IsNullOrWhiteSpace(lastModId) ? ModConfigRegistry.Get(lastModId) : baseLibConfig;
+        LoadModConfig(lastMod ?? baseLibConfig); // lastMod could be null if the mod is no longer loaded
 
         _fadeInTween?.Kill();
         _fadeInTween = CreateTween().SetParallel();
@@ -286,12 +443,21 @@ public partial class NModConfigSubmenu : NSubmenu
             .From(new Color(0, 0, 0, 0))
             .SetEase(Tween.EaseType.Out)
             .SetTrans(Tween.TransitionType.Cubic);
+
+        // Ensure back button is visible when switching between controller/mouse, etc.
+        Callable.From(InputTypeChanged).CallDeferred();
     }
 
     protected override void OnSubmenuHidden()
     {
+        SaveAndClearCurrentMod();
+
+        base.OnSubmenuHidden();
+    }
+
+    private void SaveAndClearCurrentMod()
+    {
         if (_currentConfig != null) _currentConfig.ConfigChanged -= OnConfigChanged;
-        if (_opener != null) _opener.IsConfigOpen = false;
         SaveCurrentConfig();
 
         if (_optionContainer != null)
@@ -301,14 +467,14 @@ public partial class NModConfigSubmenu : NSubmenu
             _optionContainer = null;
         }
 
+        _currentConfig = null;
+
         if (ModConfig.ModConfigLogger.PendingUserMessages.Count > 0)
         {
             // The main menu will only show this when recreated; if a player goes from settings to play a game,
             // that is AFTER finishing the game. We need to show the error now, so let's check here, too.
             Callable.From(ModConfig.ShowAndClearPendingErrors).CallDeferred();
         }
-
-        base.OnSubmenuHidden();
     }
 
     private void OnConfigChanged(object? sender, EventArgs e)
@@ -347,5 +513,16 @@ public partial class NModConfigSubmenu : NSubmenu
     {
         _currentConfig?.Save();
         _saveTimer = -1;
+    }
+
+    public override void _ExitTree()
+    {
+        GetViewport().Disconnect(Viewport.SignalName.SizeChanged, Callable.From(RefreshSize));
+        NControllerManager.Instance?.Disconnect(NControllerManager.SignalName.MouseDetected,
+            Callable.From(InputTypeChanged));
+        NControllerManager.Instance?.Disconnect(NControllerManager.SignalName.ControllerDetected,
+            Callable.From(InputTypeChanged));
+
+        base._ExitTree();
     }
 }

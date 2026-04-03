@@ -181,3 +181,16 @@ class MapIconOutlinePath
         return __result == null;
     }
 }
+[HarmonyPatch(typeof(AncientEventModel), "RunHistoryIconOutlinePath", MethodType.Getter)]
+class RunHistoryIconOutlinePath
+{
+    [HarmonyPrefix]
+    static bool Custom(AncientEventModel __instance, ref string? __result)
+    {
+        if (__instance is not CustomAncientModel custom)
+            return true;
+
+        __result = custom.CustomRunHistoryIconOutlinePath;
+        return __result == null;
+    }
+}

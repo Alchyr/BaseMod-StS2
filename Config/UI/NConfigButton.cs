@@ -3,6 +3,7 @@ using MegaCrit.Sts2.Core.Assets;
 using MegaCrit.Sts2.Core.ControllerInput;
 using MegaCrit.Sts2.Core.Helpers;
 using MegaCrit.Sts2.Core.Nodes.Combat;
+using MegaCrit.Sts2.Core.Nodes.GodotExtensions;
 using MegaCrit.Sts2.Core.Nodes.Screens.Settings;
 
 namespace BaseLib.Config.UI;
@@ -85,16 +86,19 @@ public partial class NConfigButton : NSettingsButton
         {
             label.Text = buttonText;
         }
+
+        _onPressedAction = onPressed;
+        Connect(NClickableControl.SignalName.Released, Callable.From<NConfigButton>(OnReleased));
     }
 
-    public override void _GuiInput(InputEvent @event)
+    private void OnReleased(NConfigButton button)
     {
-        base._GuiInput(@event);
+        _onPressedAction?.Invoke();
+    }
 
-        if (@event is InputEventMouseButton { ButtonIndex: MouseButton.Left } mouseEvent && mouseEvent.IsReleased() ||
-            @event.IsActionReleased(MegaInput.select))
-        {
-            _onPressedAction?.Invoke();
-        }
+    public override void _ExitTree()
+    {
+        base._ExitTree();
+        Disconnect(NClickableControl.SignalName.Released, Callable.From<NConfigButton>(OnReleased));
     }
 }

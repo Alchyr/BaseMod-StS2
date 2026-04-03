@@ -39,9 +39,11 @@ internal static class LogWindowPlacement
         else
             logWindow.Size = ComputeDefaultSize(host.Size);
 
-        // No save here: if the window is left as-is, it will return to its old position if available next time
-        if (!TryRestorePosition(logWindow))
-            logWindow.MoveToCenter();
+        if (TryRestorePosition(logWindow)) return;
+
+        // Restore failed: center the window. MoveToCenter crashes if Visible = false, which we want to prevent a flicker.
+        var screenRect = DisplayServer.ScreenGetUsableRect(host.CurrentScreen);
+        logWindow.Position = screenRect.Position + screenRect.Size / 2 - logWindow.Size / 2;
     }
 
     /// <summary>

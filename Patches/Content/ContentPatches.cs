@@ -1,7 +1,9 @@
 using System.Reflection;
+using System.Text;
 using BaseLib.Abstracts;
 using BaseLib.Utils;
 using HarmonyLib;
+using MegaCrit.Sts2.Core.Helpers;
 using MegaCrit.Sts2.Core.Modding;
 using MegaCrit.Sts2.Core.Models;
 using MegaCrit.Sts2.Core.Rooms;
@@ -14,6 +16,7 @@ public static class CustomContentDictionary
 {
     public static readonly HashSet<Type> RegisteredTypes = [];
     private static readonly Dictionary<Type, Type> PoolTypes = [];
+    public static readonly List<CustomEncounterModel> CustomEncounters = [];
     public static readonly List<CustomAncientModel> CustomAncients = [];
     
     static CustomContentDictionary()
@@ -41,6 +44,13 @@ public static class CustomContentDictionary
         }
         
         ModHelper.AddModelToPool(poolAttribute.PoolType, modelType);
+    }
+
+    public static void AddEncounter(CustomEncounterModel encounter)
+    {
+        if (!RegisterType(encounter.GetType())) return;
+
+        CustomEncounters.Add(encounter);
     }
 
     public static void AddAncient(CustomAncientModel ancient)
@@ -194,6 +204,48 @@ class ActModelGenerateRoomsPatch
         if (ancientToSpawn != null)
         {
             rooms.Ancient = ancientToSpawn;
+        }
+    }
+}
+
+/// <summary>
+/// Called in PostModInitPatch to catch modded acts
+/// </summary>
+public static class AddCustomEncounters
+{
+    public static void Patch(Harmony harmony)
+    {
+        StringBuilder patchedTypes = new("Patching act types for custom encounters");
+        //TODO - Also patch custom events here?
+        
+        foreach (var t in ReflectionHelper.GetSubtypes<ActModel>()) {
+            var method = AccessTools.DeclaredMethod(t, nameof(ActModel.GenerateAllEncounters));
+            if (method == null) continue;
+
+            patchedTypes.Append(" | ").Append(t.Name);
+            harmony.Patch(method, postfix: AccessTools.Method(typeof(AddCustomEncounters), nameof(AddCustom)));
+        }
+        foreach (var t in ReflectionHelper.GetSubtypesInMods<ActModel>()) {
+            var method = AccessTools.DeclaredMethod(t, nameof(ActModel.GenerateAllEncounters));
+            if (method == null) continue;
+
+            patchedTypes.Append(" | ").Append(t.Name);
+            harmony.Patch(method, postfix: AccessTools.Method(typeof(AddCustomEncounters), nameof(AddCustom)));
+        }
+
+        BaseLibMain.Logger.Info(patchedTypes.ToString());
+    }
+
+    static IEnumerable<EncounterModel> AddCustom(IEnumerable<EncounterModel> result, ActModel __instance)
+    {
+        foreach (var value in result)
+        {
+            yield return value;
+        }
+
+        foreach (CustomEncounterModel encounter in CustomContentDictionary.CustomEncounters)
+        {
+            if (encounter.IsValidForAct(__instance)) yield return encounter;
         }
     }
 }

@@ -7,6 +7,7 @@ public static class ModConfigRegistry
     public static void Register(string modId, ModConfig config)
     {
         if (!config.HasSettings()) return;
+        config.ModId = modId;
         ModConfigs[modId] = config;
     }
 
@@ -21,5 +22,8 @@ public static class ModConfigRegistry
         return ModConfigs.Values.OfType<T>().FirstOrDefault();
     }
 
-    public static List<ModConfig> GetAll() => ModConfigs.Values.ToList();
+    public static List<ModConfig> GetAll() =>
+        ModConfigs.Values
+        .OrderBy(m => m.ModId)
+        .ToList();
 }

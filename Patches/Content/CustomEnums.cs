@@ -1,3 +1,4 @@
+using System.Numerics;
 using System.Reflection;
 using BaseLib.Abstracts;
 using BaseLib.Extensions;
@@ -65,7 +66,7 @@ public static class CustomEnums
         }
         return generator.GetKey();
     }
-    private class KeyGenerator //will break an enum used like bitflags
+    private class KeyGenerator
     {
         private static readonly Dictionary<Type, Func<object, object>> Incrementers = new()
         {
@@ -78,6 +79,30 @@ public static class CustomEnums
             { typeof(long), (val) => ((long)val) + 1 },
             { typeof(ulong), (val) => ((ulong)val) + 1 }
         };
+
+        private static readonly Dictionary<Type, Func<object, object>> FlagIncrementers = new()
+        {
+            { typeof(byte), FlagIncrementer<byte>() },
+            { typeof(sbyte), FlagIncrementer<sbyte>() },
+            { typeof(short), FlagIncrementer<short>() },
+            { typeof(ushort), FlagIncrementer<ushort>() },
+            { typeof(int), FlagIncrementer<int>() },
+            { typeof(uint), FlagIncrementer<uint>() },
+            { typeof(long), FlagIncrementer<long>() },
+            { typeof(ulong), FlagIncrementer<ulong>() },
+        };
+
+        private static Func<object, object> FlagIncrementer<T>() where T : struct, IBinaryInteger<T>
+        {
+            return val =>
+            {
+                var v = (T)val;
+                var r = T.One;
+                while (r <= v && r != T.Zero) r <<= 1;
+                return r;
+            };
+        }
+
         private object _nextKey;
         private readonly Func<object, object> _increment;
 
@@ -88,12 +113,14 @@ public static class CustomEnums
                 _increment = o => o;
                 throw new ArgumentException("Attempted to construct KeyGenerator with non-enum type " + t.FullName);
             }
-
+            
+            var isFlags = t.GetCustomAttribute<FlagsAttribute>() != null;
             var values = t.GetEnumValuesAsUnderlyingType();
             var underlyingType = Enum.GetUnderlyingType(t);
 
             _nextKey = Convert.ChangeType(0, underlyingType);
-            _increment = Incrementers[underlyingType];
+            
+            _increment = isFlags ? FlagIncrementers[underlyingType] : Incrementers[underlyingType];
 
             if (values.Length > 0)
             {
@@ -106,7 +133,7 @@ public static class CustomEnums
                 }
             }
             
-            BaseLibMain.Logger.Info($"Generated KeyGenerator for enum {t.FullName} with starting value {_nextKey}");
+            BaseLibMain.Logger.Info($"Generated KeyGenerator for enum {t.FullName} with starting value {_nextKey} (IsFlags: {isFlags})");
         }
 
         public object GetKey()

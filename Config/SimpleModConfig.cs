@@ -47,6 +47,11 @@ public class SimpleModConfig : ModConfig
         centerContainer.AddChild(resetButton);
 
         optionContainer.AddChild(centerContainer);
+
+        var selfNodePath = new NodePath(".");
+        resetButton.FocusNeighborBottom = selfNodePath;
+        resetButton.FocusNeighborLeft = selfNodePath;
+        resetButton.FocusNeighborRight = selfNodePath;
     }
 
     public async Task ConfirmRestoreDefaults()
@@ -253,6 +258,7 @@ public class SimpleModConfig : ModConfig
     {
         Control? currentSetting = null;
         string? currentSection = null;
+        var selfNodePath = new NodePath(".");
 
         // Fetch properties AND methods in the order they appear in the source file.
         // Instance is supported for methods, but not properties (which must be static); they are filtered in
@@ -296,9 +302,14 @@ public class SimpleModConfig : ModConfig
                     currentSetting.FocusNeighborTop = currentSetting.GetPathTo(previousSetting);
                     previousSetting.FocusNeighborBottom = previousSetting.GetPathTo(currentSetting);
                 }
+                else
+                {
+                    // Prevent unintended movement to the mod list
+                    currentSetting.FocusNeighborTop = selfNodePath;
+                }
 
-                currentSetting.FocusNeighborLeft = currentSetting.GetPath();
-                currentSetting.FocusNeighborRight = currentSetting.GetPath();
+                currentSetting.FocusNeighborLeft = selfNodePath;
+                currentSetting.FocusNeighborRight = selfNodePath;
             }
             catch (NotSupportedException ex)
             {

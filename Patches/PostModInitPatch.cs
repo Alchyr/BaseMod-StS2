@@ -1,5 +1,6 @@
 ﻿using System.Reflection;
 using BaseLib.Extensions;
+using BaseLib.Patches.Content;
 using BaseLib.Patches.Features;
 using BaseLib.Patches.Utils;
 using HarmonyLib;
@@ -17,6 +18,9 @@ class PostModInitPatch
     private static void ProcessModdedTypes()
     {
         Harmony harmony = new("PostModInit");
+
+        AddCustomEncounters.Patch(harmony);
+        
 
         ModInterop interop = new();
         

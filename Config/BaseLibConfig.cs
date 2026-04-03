@@ -3,6 +3,9 @@
 [HoverTipsByDefault]
 internal class BaseLibConfig : SimpleModConfig
 {
+    // Should likely be at the top, as an easy and obvious opt-out
+    public static bool ShowModConfigInMainMenu { get; set; } = true;
+
     [ConfigSection("LogSection")]
     public static bool OpenLogWindowOnStartup { get; set; } = false;
 
@@ -22,4 +25,6 @@ internal class BaseLibConfig : SimpleModConfig
     [ConfigHideInUI] public static int LogLastSizeY { get; set; } = 0;
     [ConfigHideInUI] public static int LogLastPosX { get; set; } = 0;
     [ConfigHideInUI] public static int LogLastPosY { get; set; } = 0;
+
+    [ConfigHideInUI] public static string LastModConfigModId { get; set; } = "";
 }

@@ -7,14 +7,27 @@ namespace BaseLib.Abstracts;
 
 public abstract class CustomPotionModel : PotionModel, ICustomModel, ILocalizationProvider
 {
+    [Obsolete("Pass value in constructor instead. Field will be deleted.")]
     public virtual bool AutoAdd => true;
-    public CustomPotionModel()
+    
+    public CustomPotionModel(bool autoAdd = true)
     {
-        if (AutoAdd) CustomContentDictionary.AddModel(GetType());
+        if (autoAdd) CustomContentDictionary.AddModel(GetType());
     }
 
-    public virtual string? PackedImagePath => null;
-    public virtual string? PackedOutlinePath => null;
+    /// <summary>
+    /// Override this or place your potion's image at
+    /// "res://images/atlases/potion_atlas.sprites/modid-potion_name.tres"
+    /// You may pass the path to a png or any other file that Godot can load as a Texture2D.
+    /// </summary>
+    public virtual string? CustomPackedImagePath => null;
+
+    /// <summary>
+    /// Override this or place your potion's outline image at
+    /// "res://images/atlases/potion_outline_atlas.sprites/modid-potion_name.tres"
+    /// You may pass the path to a png or any other file that Godot can load as a Texture2D.
+    /// </summary>
+    public virtual string? CustomPackedOutlinePath => null;
     
     /// <summary>
     /// Override this to define localization directly in your class.
@@ -22,22 +35,22 @@ public abstract class CustomPotionModel : PotionModel, ICustomModel, ILocalizati
     /// </summary>
     public virtual List<(string, string)>? Localization => null;
     
-    [HarmonyPatch(typeof(PotionModel), nameof(CustomPotionModel.PackedImagePath), MethodType.Getter)]
+    [HarmonyPatch(typeof(PotionModel), nameof(PackedImagePath), MethodType.Getter)]
     private static class ImagePatch {
-        static bool Prefix(PotionModel __instance, ref string __result) {
-            if (__instance is not CustomPotionModel model || model.PackedImagePath is not string path)
+        static bool Prefix(PotionModel __instance, ref string? __result) {
+            if (__instance is not CustomPotionModel model)
                 return true;
-            __result = path;
-            return false;
+            __result = model.CustomPackedImagePath;
+            return __result == null;
         }
     }
-    [HarmonyPatch(typeof(PotionModel), nameof(CustomPotionModel.PackedOutlinePath), MethodType.Getter)]
+    [HarmonyPatch(typeof(PotionModel), nameof(PackedOutlinePath), MethodType.Getter)]
     private static class OutlinePatch {
-        static bool Prefix(PotionModel __instance, ref string __result) {
-            if (__instance is not CustomPotionModel model || model.PackedOutlinePath is not string path)
+        static bool Prefix(PotionModel __instance, ref string? __result) {
+            if (__instance is not CustomPotionModel model)
                 return true;
-            __result = path;
-            return false;
+            __result = model.CustomPackedOutlinePath;
+            return __result == null;
         }
     }
 }

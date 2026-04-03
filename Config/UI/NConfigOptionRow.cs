@@ -1,5 +1,6 @@
 ﻿using System.Reflection;
 using Godot;
+using HarmonyLib;
 using MegaCrit.Sts2.Core.Helpers;
 using MegaCrit.Sts2.Core.HoverTips;
 using MegaCrit.Sts2.Core.Localization;
@@ -17,8 +18,6 @@ public partial class NConfigOptionRow : MarginContainer
     private HoverTip? _hoverTip;
     private bool _hoverTipVisible;
     private readonly string _modPrefix;
-
-    private const float HoverTipOffset = 1015;
 
     public NConfigOptionRow(string modPrefix, string name, Control label, Control settingControl)
     {
@@ -120,8 +119,29 @@ public partial class NConfigOptionRow : MarginContainer
     private void OnHovered()
     {
         if (_hoverTip == null) return;
+
         var tipSet = NHoverTipSet.CreateAndShow(this, _hoverTip);
-        tipSet.GlobalPosition = GlobalPosition + new Vector2(HoverTipOffset, 0);
+
+        var containerField = AccessTools.Field(typeof(NHoverTipSet), "_textHoverTipContainer");
+        if (containerField?.GetValue(tipSet) is not VFlowContainer textContainer) return;
+
+        var hoverTipWidth = 360f; // Fallback
+        var hoverTipHeight = textContainer.Size.Y;
+
+        // The container lies: wider hover tips will render outside the screen if we read its width (height is OK)
+        foreach (var child in textContainer.GetChildren())
+        {
+            if (child is Control childControl)
+                hoverTipWidth = Mathf.Max(hoverTipWidth, childControl.Size.X);
+        }
+
+        // Try to show the hover tip over the next row
+        var screenSize = GetViewportRect().Size;
+        tipSet.GlobalPosition = new Vector2(screenSize.X - hoverTipWidth, GlobalPosition.Y + 80f);
+
+        // There isn't enough space below; show above instead
+        if (tipSet.GlobalPosition.Y + hoverTipHeight > screenSize.Y)
+            tipSet.GlobalPosition = new Vector2(screenSize.X - hoverTipWidth, GlobalPosition.Y - hoverTipHeight - 12f);
     }
 
     private void OnUnhovered()

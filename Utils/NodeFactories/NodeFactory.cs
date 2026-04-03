@@ -24,6 +24,11 @@ public abstract class NodeFactory<T> : NodeFactory where T : Node, new()
     public static T CreateFromResource(object resource)
     {
         if (_instance == null) throw new Exception($"No node factory found for type '{typeof(T).FullName}'");
+        if (!BaseLibMain.IsMainThread)
+        {
+            BaseLibMain.Logger.Warn($"NodeFactory<{typeof(T)}>.CreateFromResource called while not on main thread");
+            throw new Exception($"NodeFactory<{typeof(T)}>.CreateFromResource called while not on main thread");
+        }
         BaseLibMain.Logger.Info($"Creating {typeof(T).Name} from resource {resource.GetType().Name}");
         var n = _instance.CreateBareFromResource(resource);
         _instance.ConvertScene(n, null);
@@ -50,6 +55,11 @@ public abstract class NodeFactory<T> : NodeFactory where T : Node, new()
     public static T CreateFromScene(PackedScene scene)
     {
         if (_instance == null) throw new Exception($"No node factory found for type '{typeof(T).FullName}'");
+        if (!BaseLibMain.IsMainThread)
+        {
+            BaseLibMain.Logger.Error($"NodeFactory<{typeof(T)}>.CreateFromScene called while not on main thread");
+            throw new Exception($"NodeFactory<{typeof(T)}>.CreateFromScene called while not on main thread");
+        }
         
         BaseLibMain.Logger.Info($"Creating {typeof(T).Name} from scene {scene.ResourcePath}");
         return _instance.CreateFromNode(scene.Instantiate());
@@ -246,24 +256,6 @@ public abstract class NodeFactory
         _sceneTypes[scenePath] = nodeType;
         BaseLibMain.Logger.Info($"Registered scene '{scenePath}' for auto-conversion to {nodeType.Name}");
     }
-
-    /// <summary>
-    /// Remove a previously registered scene path. Safe to call even if the path was never registered.
-    /// </summary>
-    public static void UnregisterSceneType(string scenePath)
-    {
-        _sceneTypes.TryRemove(scenePath, out _);
-    }
-
-    /// <summary>
-    /// Check whether a factory is registered for the given node type.
-    /// </summary>
-    public static bool HasFactory<TNode>() where TNode : Node => _factories.ContainsKey(typeof(TNode));
-
-    /// <summary>
-    /// Check whether a scene path is registered for auto-conversion.
-    /// </summary>
-    public static bool IsRegistered(string scenePath) => !string.IsNullOrEmpty(scenePath) && _sceneTypes.ContainsKey(scenePath);
 
     internal static void RegisterFactory(Type nodeType, NodeFactory factory)
     {

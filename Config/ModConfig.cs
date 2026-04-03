@@ -54,6 +54,7 @@ public abstract partial class ModConfig
 
     private readonly string _path;
     public string ModPrefix { get; private set; }
+    public string? ModId { get; set; } // Injected by ModConfigRegistry
 
     private readonly string _modConfigName;
     private bool _savingDisabled;
@@ -89,6 +90,7 @@ public abstract partial class ModConfig
     public ModConfig(string? filename = null)
     {
         ModPrefix = GetType().GetPrefix();
+        ModId = null;
         _modConfigName = GetType().FullName ?? "unknown";
         var rootNamespace = GetType().GetRootNamespace();
 
@@ -114,6 +116,9 @@ public abstract partial class ModConfig
     }
 
     public bool HasSettings() => ConfigProperties.Count > 0;
+    public bool HasVisibleSettings() =>
+        ConfigProperties.Any(p => p.GetCustomAttribute<ConfigHideInUI>() == null);
+
 
     private void CheckConfigProperties()
     {

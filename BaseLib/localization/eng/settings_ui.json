@@ -1,9 +1,16 @@
 {
   "BASELIB.mod_title": "BaseLib",
+  "BASELIB.MOD_CONFIG_SETTINGS_ROW.title": "Mod Configuration (BaseLib)",
+  "BASELIB.MOD_CONFIG_SETTINGS_ROW.button": "Open Config",
 
+  "BASELIB-UNKNOWN_MOD_NAME": "Unknown mod name",
   "BASELIB-RESTORE_DEFAULTS_BUTTON.title": "Restore defaults",
   "BASELIB-RESTORE_MODCONFIG_CONFIRMATION.header": "Confirm restore",
   "BASELIB-RESTORE_MODCONFIG_CONFIRMATION.body": "Restore default settings for this mod?",
+
+  "BASELIB-SHOW_MOD_CONFIG_IN_MAIN_MENU.title": "Show Mod Configuration in main menu (restart required)",
+  "BASELIB-SHOW_MOD_CONFIG_IN_MAIN_MENU.hover.title": "Show Mod Configuration in main menu",
+  "BASELIB-SHOW_MOD_CONFIG_IN_MAIN_MENU.hover.desc": "There's always an entry in the game's settings.",
 
   "BASELIB-LOG_SECTION.title": "Log window/Console",
 

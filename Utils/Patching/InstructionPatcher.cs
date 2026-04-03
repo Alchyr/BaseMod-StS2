@@ -198,11 +198,28 @@ public class InstructionPatcher(IEnumerable<CodeInstruction> instructions)
         int i = 0;
         foreach (CodeInstruction instruction in replacement)
         {
-            code[lastMatchStart + i] = instruction;
+            int replaceIndex = lastMatchStart + i;
+            if (replaceIndex > index)
+            {
+                index = replaceIndex;
+                code.Insert(index, instruction);
+            }
+            else
+            {
+                code[lastMatchStart + i] = instruction;
+            }
             ++i;
         }
-        code.RemoveRange(lastMatchStart + i, index - (lastMatchStart + i));
-        index = lastMatchStart + i;
+
+        if (lastMatchStart + i < index)
+        {
+            code.RemoveRange(lastMatchStart + i, index - (lastMatchStart + i));
+            index = lastMatchStart + i;
+        }
+        else
+        {
+            ++index;
+        }
 
         return this;
     }
@@ -327,6 +344,20 @@ public class InstructionPatcher(IEnumerable<CodeInstruction> instructions)
         
         Log.Add($"Inserted {codeInstructions.Length} instructions, new index {index}");
 
+        return this;
+    }
+
+    public InstructionPatcher CopyMatch(out List<CodeInstruction> match)
+    {
+        if (index < 0) throw new Exception("Attempted to CopyMatch without any match found");
+
+        match = code.GetRange(lastMatchStart, index - lastMatchStart);
+        
+        Log.Add($"Copied {match.Count} instructions:\n");
+        foreach (var instruction in match)
+        {
+            Log.Add($" - {instruction}");
+        }
         return this;
     }
 

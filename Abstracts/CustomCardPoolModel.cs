@@ -71,13 +71,21 @@ public abstract class CustomCardPoolModel : CardPoolModel, ICustomModel, ICustom
 [HarmonyPatch(typeof(CardPoolModel), "FrameMaterial", MethodType.Getter)]
 class CustomCardPoolMaterialPatch
 {
+    private static readonly Dictionary<Type, ShaderMaterial> _poolMaterials = [];
+    
     [HarmonyPrefix]
     static bool UseCustomMaterial(CardPoolModel __instance, ref Material __result)
     {
         if (__instance is CustomCardPoolModel customPool) {
             if (!customPool.CardFrameMaterialPath.Equals("card_frame_red")) return true;
 
-            __result = ShaderUtils.GenerateHsv(customPool.H, customPool.S, customPool.V);
+            if (!_poolMaterials.TryGetValue(__instance.GetType(), out ShaderMaterial? shaderMaterial))
+            {
+                shaderMaterial = ShaderUtils.GenerateHsv(customPool.H, customPool.S, customPool.V);
+                _poolMaterials[__instance.GetType()] = shaderMaterial;
+            }
+
+            __result = shaderMaterial;
             return false;
         }
         return true;

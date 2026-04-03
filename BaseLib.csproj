@@ -17,9 +17,9 @@
         <PackageId>Alchyr.Sts2.BaseLib</PackageId>
         <Title>BaseLib-StS2</Title>
         <Description>Mod for Slay the Spire 2 providing utilities and features for other mods.</Description>
-        <Version>0.2.3</Version>
+        <Version>0.2.4</Version>
         <Authors>Alchyr</Authors>
-        <PackageReleaseNotes>Many changes</PackageReleaseNotes>
+        <PackageReleaseNotes>New custom models, bitflag custom enums, ancient path outline method patch, per-card frame material, add publicizer, fix for beta, mod config updates, custom potion model method name changes</PackageReleaseNotes>
         <PackageTags>c#</PackageTags>
         <NoWarn>$(NoWarn);NU5128;MSB3270</NoWarn>
 
@@ -80,13 +80,6 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <PackageReference Include="BepInEx.AssemblyPublicizer.MSBuild" Version="0.4.3">
-            <PrivateAssets>all</PrivateAssets>
-            <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
-        </PackageReference>
-    </ItemGroup>
-
-    <ItemGroup>
         <Reference Include="0Harmony">
             <HintPath>$(Sts2DataDir)/0Harmony.dll</HintPath>
             <Private>false</Private>
@@ -95,6 +88,11 @@
             <HintPath>$(Sts2DataDir)/sts2.dll</HintPath>
             <Private>false</Private>
         </Reference>
+        <PackageReference Include="Krafs.Publicizer" Version="2.3.0" PrivateAssets="All"/>
+    </ItemGroup>
+
+    <ItemGroup>
+        <Publicize Include="sts2" IncludeVirtualMembers="false" IncludeCompilerGeneratedMembers="false" />
     </ItemGroup>
     
     <ItemGroup>

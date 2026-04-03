@@ -69,7 +69,6 @@ public partial class NConfigDropdown : NSettingsDropdown
 
         if (!IsNodeReady()) return;
         _currentOptionLabel.SetTextAutoSize(_items[newIndex].Text);
-        CloseDropdown();
     }
 
     public override void _Process(double delta)
