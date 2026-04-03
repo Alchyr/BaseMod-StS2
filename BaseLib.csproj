@@ -19,7 +19,7 @@
         <Description>Mod for Slay the Spire 2 providing utilities and features for other mods.</Description>
         <Version>0.2.5</Version>
         <Authors>Alchyr</Authors>
-        <PackageReleaseNotes>ensure nuget .pck is up to date</PackageReleaseNotes>
+        <PackageReleaseNotes>ensure nuget .pck is up to date, heal patch hotfix, remove popup on modconfig open failure</PackageReleaseNotes>
         <PackageTags>c#</PackageTags>
         <NoWarn>$(NoWarn);NU5128;MSB3270</NoWarn>
 
