@@ -27,6 +27,7 @@ public partial class NModConfigSubmenu : NSubmenu
 
     private ModConfig? _currentConfig;
     private double _saveTimer = -1;
+    private bool _modLoadFailed;
     private const double AutosaveDelay = 5;
     private bool _isUsingController;
     private bool _lastFocusOnRight;
@@ -164,7 +165,7 @@ public partial class NModConfigSubmenu : NSubmenu
     {
         LoadModConfig(modConfig);
 
-        if (!_isUsingController) return;
+        if (!_isUsingController || _modLoadFailed) return;
 
         SetBackButtonVisible(false);
         button.SetHotkeyIconVisible(true);
@@ -267,16 +268,30 @@ public partial class NModConfigSubmenu : NSubmenu
         try
         {
             config.SetupConfigUI(_optionContainer);
+            _modLoadFailed = false;
         }
         catch (Exception e)
         {
-            ModConfig.ModConfigLogger.Error($"Failed setting up config for mod {GetType().Assembly.GetName().Name}.\n" +
-                                            "This is either because the mod set something up incorrectly, or a " +
-                                            "compatibility issue.\n" +
-                                            "Try updating BaseLib and the mod in question, if newer versions exist.");
-            BaseLibMain.Logger.Error(e.ToString());
-            _stack.Pop();
-            return;
+            _modLoadFailed = true;
+            SaveAndClearCurrentMod();
+            _currentConfig = config; // Cleared by the above, but should remain in this case
+
+            _optionContainer = CreateOptionContainer();
+            _contentPanel.AddChild(_optionContainer);
+
+            var modName = GetModTitle(config);
+            var message = $"[center]BaseLib failed setting up the mod config for {modName}.\n" +
+                          "This is either because the mod set something up incorrectly, or a " +
+                          "compatibility issue.\n" +
+                          $"Try updating BaseLib and {modName}, if newer versions exist.[/center]";
+            var errorLabel = ModConfig.CreateRawLabelControl(message, 32);
+
+            errorLabel.FitContent = true;
+            errorLabel.SizeFlagsHorizontal = SizeFlags.ExpandFill;
+
+            _optionContainer.AddChild(errorLabel);
+
+            BaseLibMain.Logger.Error($"SetupConfigUI failed for mod {modName}: {e}");
         }
 
         try
@@ -399,6 +414,8 @@ public partial class NModConfigSubmenu : NSubmenu
 
         // Emulate the game and add extra space at the bottom if scrolling is (almost, due to the 30f padding) needed
         var clipperSize = _contentPanel.GetParent<Control>().Size;
+        _optionContainer.CustomMinimumSize = new Vector2(actualSettingsWidth, 0);
+        _optionContainer.Size = new Vector2(actualSettingsWidth, 0);
         var requiredHeight = _optionContainer.GetMinimumSize().Y;
         var paddedHeight = requiredHeight + 30f;
 
@@ -410,7 +427,7 @@ public partial class NModConfigSubmenu : NSubmenu
         _contentPanel.CustomMinimumSize = new Vector2(rightContentWidth, paddedHeight);
         _contentPanel.Size = new Vector2(rightContentWidth, paddedHeight);
 
-        _optionContainer.CustomMinimumSize = new Vector2(actualSettingsWidth, requiredHeight);
+        _optionContainer.CustomMinimumSize = new Vector2(actualSettingsWidth, 0);
         _optionContainer.Size = new Vector2(actualSettingsWidth, requiredHeight);
 
         // Force center the mod title over the actual settings
@@ -507,8 +524,11 @@ public partial class NModConfigSubmenu : NSubmenu
 
     private void SaveCurrentConfig()
     {
-        _currentConfig?.Save();
         _saveTimer = -1;
+        if (_modLoadFailed)
+            BaseLibMain.Logger.Warn($"Ignoring SaveCurrentConfig for {_currentConfig?.ModId}: UI setup failed");
+        else
+            _currentConfig?.Save();
     }
 
     public override void _ExitTree()
