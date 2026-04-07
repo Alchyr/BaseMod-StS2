@@ -19,7 +19,7 @@ public static class RewardSynchronizerExtensions
     /// <summary>
     /// Struct to save a custom reward message until combat ends
     /// </summary>
-    internal struct BufferedCustomRewardMessage
+    public struct BufferedCustomRewardMessage
     {
         /// <summary>
         /// the id of the player who sent the message
@@ -32,7 +32,8 @@ public static class RewardSynchronizerExtensions
     }
 
     /// <summary>
-    /// Reference list of buffered messages
+    /// Reference list of buffered messages<br/>
+    /// Hopefully there is only ever one instance of <see cref="RewardSynchronizer"/> at a time on each client?
     /// </summary>
     internal static List<BufferedCustomRewardMessage> _bufferedCustomRewardMessages = [];
 
@@ -63,19 +64,26 @@ public static class RewardSynchronizerExtensions
         /// Exposes the private RunLocationTargetedMessageBuffer property
         /// </summary>
         public RunLocationTargetedMessageBuffer? MessageBuffer => rewardSynchronizer._messageBuffer;
+        /// <summary>
+        /// Exposes the private INetGameService property
+        /// </summary>
+        public INetGameService? GameService => rewardSynchronizer._gameService;
 
 
+        /// <summary>
+        /// Method to handle transforming a card as a combat reward
+        /// </summary>
         public async Task<bool> DoLocalCardTransform(bool upgrade = false)
         {
             CardTransformRewardMessage message = new CardTransformRewardMessage
             {
-                location = rewardSynchronizer._messageBuffer.CurrentLocation,
+                location = rewardSynchronizer.MessageBuffer.CurrentLocation,
                 rewardType = CardTransformReward.CardTransform,
                 Upgrade = upgrade,
 
             };
-            rewardSynchronizer._gameService.SendMessage(message);
-            return await rewardSynchronizer.DoCardTransform(rewardSynchronizer.LocalPlayer, upgrade);
+            rewardSynchronizer.GameService?.SendMessage(message);
+            return await rewardSynchronizer.DoCardTransform(rewardSynchronizer.LocalPlayerRef, upgrade);
         }
 
         public async Task<bool> DoCardTransform(Player player, bool upgrade = false)
@@ -85,7 +93,7 @@ public static class RewardSynchronizerExtensions
                 Cancelable = false,
                 RequireManualConfirmation = true
             };
-            CardModel card = (await CardSelectCmd.FromDeckForTransformation(player, prefs)).FirstOrDefault();
+            CardModel? card = (await CardSelectCmd.FromDeckForTransformation(player, prefs)).FirstOrDefault();
             if (card != null)
             {
                 CardModel newCard = CardFactory.CreateRandomCardForTransform(card, isInCombat: false, player.RunState.Rng.Niche);
@@ -116,7 +124,7 @@ public static class RewardSynchronizerExtensions
                 BaseLibMain.Logger.Error($"Message instance creation for type {rewardMessageType.GetType()} from {rewardMessageType.Assembly} failed during Initialize");
                 continue;
             }
-            dummyMessage.Initialize(__instance._messageBuffer);
+            dummyMessage.Initialize(__instance.MessageBuffer);
         }
     }
 
@@ -131,7 +139,7 @@ public static class RewardSynchronizerExtensions
                 BaseLibMain.Logger.Error($"Message instance creation for type {rewardMessageType.GetType()} from {rewardMessageType.Assembly} failed during Dispose");
                 continue;
             }
-            dummyMessage.Dispose(__instance._messageBuffer);
+            dummyMessage.Dispose(__instance.MessageBuffer);
         }
     }
 
