@@ -16,7 +16,7 @@ public class CardTransformReward(Player player, bool upgrade = false) : CustomRe
     public static RewardType CardTransform;
     protected override RewardType RewardType => CardTransform;
 
-    public required bool Upgrade;
+    public bool Upgrade = upgrade;
 
     public override LocString Description => new LocString("gameplay_ui", "COMBAT_REWARD_CARD_TRANSFORM");
     public override bool IsPopulated => true;
