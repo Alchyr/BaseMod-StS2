@@ -19,9 +19,9 @@
         <PackageId>Alchyr.Sts2.BaseLib</PackageId>
         <Title>BaseLib-StS2</Title>
         <Description>Mod for Slay the Spire 2 providing utilities and features for other mods.</Description>
-        <Version>0.2.9</Version>
+        <Version>3.0.0</Version>
         <Authors>Alchyr</Authors>
-        <PackageReleaseNotes>custom event model, custom enchantment model, rus loc (Nitablade), fix missing exceptions in showlog, archaic tooth interface, ConstructedCardModel improvements, hp overlay bugfix</PackageReleaseNotes>
+        <PackageReleaseNotes>hotfix minor adjustments</PackageReleaseNotes>
         <PackageTags>c#</PackageTags>
         <NoWarn>$(NoWarn);NU5128;MSB3270</NoWarn>
 
