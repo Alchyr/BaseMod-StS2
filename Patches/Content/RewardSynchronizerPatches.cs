@@ -9,6 +9,7 @@ using MegaCrit.Sts2.Core.Helpers;
 using MegaCrit.Sts2.Core.Localization;
 using MegaCrit.Sts2.Core.Models;
 using MegaCrit.Sts2.Core.Multiplayer.Game;
+using MegaCrit.Sts2.Core.Multiplayer.Serialization;
 using MegaCrit.Sts2.Core.Runs;
 
 namespace BaseLib.Patches.Content;
@@ -151,6 +152,8 @@ public static class RewardSynchronizerExtensions
         {
             // TODO: Get reference to appropriate message handler from the message type? Call handle method?
             // bufferedMessage.message.MessageHandler(bufferedMessage.message, bufferedMessage.senderId);
+            __instance.MessageBuffer.CallHandlersOfType(bufferedMessage.message.GetType(), bufferedMessage.message, bufferedMessage.senderId);
+            
         }
         __instance.BufferedCustomRewardMessages.Clear();
     }
