@@ -31,10 +31,6 @@ class UpgradeInternalPatch
             }
         }
         if (card is not ConstructedCardModel constructed) return;
-        foreach (var keyword in constructed.KeywordsRemovedOnUpgrade)
-            constructed.RemoveKeyword(keyword);
-        if (constructed.CostUpgrade.HasValue)
-            constructed.EnergyCost.UpgradeBy(constructed.CostUpgrade.Value);
-
+        constructed.ConstructedUpgrade();
     }
 }
