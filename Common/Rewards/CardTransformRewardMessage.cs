@@ -22,24 +22,26 @@ public sealed class CardTransformRewardMessage : CustomRewardMessage
         if (CombatManager.Instance.IsInProgress)
         {
             rs.BufferCustomRewardMessage(message, senderId);
-            BaseLibMain.Logger.Debug($"Buffered card transform message for {rs.PlayerCollection?.GetPlayer(senderId)}");
+            BaseLibMain.Logger.Debug($"Buffered card transform message for {rs.PlayerCollection()?.GetPlayer(senderId)}");
             return;
         }
 
-        Player? player = rs.PlayerCollection?.GetPlayer(senderId);
-        if (player == rs.LocalPlayerRef)
+        Player? player = rs.PlayerCollection()?.GetPlayer(senderId);
+        if (player == rs.LocalPlayerRef())
         {
             throw new InvalidOperationException("CardTransformRewardMessage should not be sent to the player transforming the card");
         }
         TaskHelper.RunSafely(rs.DoCardTransform(player, message.Amount, message.Upgrade));
     }
 
+    /// <inheritdoc/>
     public override void Dispose(RunLocationTargetedMessageBuffer messageBuffer)
     {
         BaseLibMain.Logger.Debug($"Unregistering handler for {GetType()}");
         messageBuffer.UnregisterMessageHandler<CardTransformRewardMessage>(HandleCardTransformedMessage);
     }
 
+    /// <inheritdoc/>
     public override void Initialize(RunLocationTargetedMessageBuffer messageBuffer)
     {
         BaseLibMain.Logger.Debug($"Registering handler for {GetType()}");
@@ -55,12 +57,15 @@ public sealed class CardTransformRewardMessage : CustomRewardMessage
     /// </summary>
     public required int Amount;
 
+    /// <inheritdoc/>
     public override LogLevel LogLevel => LogLevel.Debug;
 
+    /// <inheritdoc/>
     public override void Deserialize(PacketReader reader)
     {
     }
 
+    /// <inheritdoc/>
     public override void Serialize(PacketWriter writer)
     {
     }
