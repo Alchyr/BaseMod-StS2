@@ -11,30 +11,40 @@ namespace BaseLib.Patches.Content;
 [HarmonyPatch(typeof(ModelDb), nameof(ModelDb.GetEntry))]
 public class PrefixIdPatch
 {
-    private static readonly ConcurrentDictionary<Type, string> IdCache = new();
+    /// <summary>Types where BaseLib rewrites <c>GetEntry</c> (custom id or <see cref="ICustomModel" /> prefix).</summary>
+    private static readonly ConcurrentDictionary<Type, string> TransformCache = new();
+
+    /// <summary>Types already classified as needing no BaseLib transform (skip reflection on later calls).</summary>
+    private static readonly ConcurrentDictionary<Type, byte> PassthroughTypes = new();
 
     [HarmonyPostfix]
-    static string AdjustID(string __result, Type type)
+    static void AdjustID(ref string __result, Type type)
     {
-        if (IdCache.TryGetValue(type, out var cachedId))
+        if (PassthroughTypes.TryGetValue(type, out _))
+            return;
+
+        if (TransformCache.TryGetValue(type, out var cached))
         {
-            return cachedId;
+            __result = cached;
+            return;
         }
-        
+
         var attr = type.GetCustomAttribute<CustomIDAttribute>();
         if (attr != null)
         {
-            IdCache[type] = attr.ID;
-            return attr.ID;
-        }
-        
-        if (type.IsAssignableTo(typeof(ICustomModel)))
-        {
-            IdCache[type] = type.GetPrefix() + __result;
-            return IdCache[type];
+            TransformCache[type] = attr.ID;
+            __result = attr.ID;
+            return;
         }
 
-        IdCache[type] = __result;
-        return __result;
+        if (type.IsAssignableTo(typeof(ICustomModel)))
+        {
+            var prefixed = type.GetPrefix() + __result;
+            TransformCache[type] = prefixed;
+            __result = prefixed;
+            return;
+        }
+
+        PassthroughTypes.TryAdd(type, 0);
     }
 }
