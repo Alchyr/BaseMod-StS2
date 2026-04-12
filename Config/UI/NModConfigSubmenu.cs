@@ -28,9 +28,14 @@ public partial class NModConfigSubmenu : NSubmenu
     private ModConfig? _currentConfig;
     private double _saveTimer = -1;
     private bool _modLoadFailed;
+    private bool _lastFocusOnModList = true;
     private const double AutosaveDelay = 5;
+
     private bool _isUsingController;
-    private bool _lastFocusOnRight;
+    private double _navRepeatTimer;
+    private StringName? _heldNavAction;
+    private const float InitialRepeatDelay = 0.4f;
+    private const float RepeatRate = 0.1f;
 
     private const float ModTitleHeight = 90f;
     private const float TopOffset = ModTitleHeight + 30f;
@@ -43,7 +48,7 @@ public partial class NModConfigSubmenu : NSubmenu
     // Read when the screen is shown *and* after a modal (e.g. confirm Restore Defaults). Ensure we return
     // to the same side that was active prior.
     protected override Control? InitialFocusedControl =>
-        _lastFocusOnRight ? FindFirstFocusable(_optionContainer) : GetActiveModButton();
+        _lastFocusOnModList ? GetActiveModButton() : _optionContainer?.FindFirstFocusable();
 
     public NModConfigSubmenu()
     {
@@ -106,6 +111,7 @@ public partial class NModConfigSubmenu : NSubmenu
 
         ConnectSignals();
         GetViewport().Connect(Viewport.SignalName.SizeChanged, Callable.From(RefreshSize));
+        GetViewport().Connect(Viewport.SignalName.GuiFocusChanged, Callable.From<Control>(OnGlobalFocusChanged));
         NControllerManager.Instance?.Connect(NControllerManager.SignalName.MouseDetected,
             Callable.From(InputTypeChanged));
         NControllerManager.Instance?.Connect(NControllerManager.SignalName.ControllerDetected,
@@ -167,32 +173,19 @@ public partial class NModConfigSubmenu : NSubmenu
 
         if (!_isUsingController || _modLoadFailed) return;
 
-        SetBackButtonVisible(false);
         button.SetHotkeyIconVisible(true);
-
-        Callable.From(() => { FindFirstFocusable(_optionContainer)?.TryGrabFocus(); })
+        Callable.From(() => { _optionContainer?.FindFirstFocusable()?.TryGrabFocus(); })
             .CallDeferred();
-        _lastFocusOnRight = true;
     }
 
     private void ModButtonFocused(NModListButton button)
     {
-        _lastFocusOnRight = false;
         SetBackButtonVisible(true);
     }
 
-    private void FocusModList()
+    private void FocusActiveModButton()
     {
-        SetBackButtonVisible(true);
-
-        foreach (var modButton in _modListVbox.GetChildren())
-        {
-            if (modButton is NModListButton listButton)
-                listButton.SetHotkeyIconVisible(false);
-        }
-
-        // Only relevant for controllers, but returns if a controller isn't being used
-        GetActiveModButton()?.TryGrabFocus();
+        Callable.From(() => GetActiveModButton()?.TryGrabFocus()).CallDeferred();
     }
 
     private void SetBackButtonVisible(bool visible)
@@ -216,15 +209,12 @@ public partial class NModConfigSubmenu : NSubmenu
             if (button is NModListButton listButton)
                 listButton.SetActiveState(listButton.ModName == GetModTitle(config));
         }
-
-        // TODO: scroll to ensure button is visible -- doesn't seem possible at the moment without custom code
     }
 
     private void InputTypeChanged()
     {
         _isUsingController = NControllerManager.Instance?.IsUsingController ?? false;
-        _lastFocusOnRight = false;
-        FocusModList();
+        FocusActiveModButton();
     }
 
     public override void _Input(InputEvent @event)
@@ -244,7 +234,7 @@ public partial class NModConfigSubmenu : NSubmenu
             return;
         }
 
-        FocusModList();
+        FocusActiveModButton();
         AcceptEvent();
     }
 
@@ -259,7 +249,6 @@ public partial class NModConfigSubmenu : NSubmenu
         _currentConfig = config;
         config.ConfigChanged += OnConfigChanged;
         SetHighlightedModButton(config);
-        _lastFocusOnRight = false;
 
         // Recreate the container to ensure the previous mod can't change something persistent by mistake
         _optionContainer = CreateOptionContainer();
@@ -320,6 +309,7 @@ public partial class NModConfigSubmenu : NSubmenu
             CustomMinimumSize = new Vector2(0f, 0f),
             AnchorRight = 1f,
             GrowHorizontal = GrowDirection.End,
+            FocusMode = FocusModeEnum.None,
             MouseFilter = MouseFilterEnum.Ignore,
         };
         container.AddChild(new Control { CustomMinimumSize = new Vector2(0, 16) });
@@ -357,6 +347,35 @@ public partial class NModConfigSubmenu : NSubmenu
             fallbackTitle = LocString.GetIfExists("settings_ui", "BASELIB-UNKNOWN_MOD_NAME")!.GetFormattedText();
 
         return fallbackTitle;
+    }
+
+    private void OnGlobalFocusChanged(Control newFocus)
+    {
+        if (!IsVisibleInTree()) return;
+
+        var focusOnModList = _leftScrollArea.IsAncestorOf(newFocus);
+
+        var focusMovedToModList = focusOnModList && !_lastFocusOnModList;
+        var focusMovedToContent = !focusOnModList && _lastFocusOnModList;
+        _lastFocusOnModList = focusOnModList;
+
+        if (focusMovedToModList)
+        {
+            SetBackButtonVisible(true);
+
+            foreach (var modButton in _modListVbox.GetChildren())
+            {
+                if (modButton is NModListButton listButton)
+                    listButton.SetHotkeyIconVisible(false);
+            }
+
+            if (newFocus != GetActiveModButton())
+                FocusActiveModButton();
+        }
+        else if (focusMovedToContent && _isUsingController)
+        {
+            SetBackButtonVisible(false);
+        }
     }
 
     private void RefreshSize()
@@ -438,6 +457,7 @@ public partial class NModConfigSubmenu : NSubmenu
     protected override void OnSubmenuShown()
     {
         base.OnSubmenuShown();
+        _contentPanel.Modulate = new Color(1f, 1f, 1f, 0f);
 
         _saveTimer = -1;
 
@@ -447,15 +467,39 @@ public partial class NModConfigSubmenu : NSubmenu
         var lastMod = !string.IsNullOrWhiteSpace(lastModId) ? ModConfigRegistry.Get(lastModId) : baseLibConfig;
         LoadModConfig(lastMod ?? baseLibConfig); // lastMod could be null if the mod is no longer loaded
 
-        _fadeInTween?.Kill();
-        _fadeInTween = CreateTween().SetParallel();
-        _fadeInTween.TweenProperty(_contentPanel, "modulate", Colors.White, 0.5f)
-            .From(new Color(0, 0, 0, 0))
-            .SetEase(Tween.EaseType.Out)
-            .SetTrans(Tween.TransitionType.Cubic);
-
         // Ensure back button is visible when switching between controller/mouse, etc.
         Callable.From(InputTypeChanged).CallDeferred();
+
+        WaitForLayoutAndFadeIn();
+    }
+
+    private async void WaitForLayoutAndFadeIn()
+    {
+        // Wait for the layout: one frame is USUALLY but not always enough to avoid jerking.
+        // try/catch due to async void.
+        try
+        {
+            await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
+            await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
+
+            _leftScrollArea.ScrollToFocusedControl(skipAnimation: true);
+        }
+        catch (Exception e)
+        {
+            BaseLibMain.Logger.Error(e.ToString());
+        }
+        finally
+        {
+            if (IsInstanceValid(this) && IsInsideTree())
+            {
+                _fadeInTween?.Kill();
+                _fadeInTween = CreateTween().SetParallel();
+                _fadeInTween.TweenProperty(_contentPanel, "modulate", Colors.White, 0.5f)
+                    .From(new Color(0, 0, 0, 0))
+                    .SetEase(Tween.EaseType.Out)
+                    .SetTrans(Tween.TransitionType.Cubic);
+            }
+        }
     }
 
     protected override void OnSubmenuHidden()
@@ -495,31 +539,46 @@ public partial class NModConfigSubmenu : NSubmenu
         _saveTimer = AutosaveDelay;
     }
 
-    private static Control? FindFirstFocusable(Node? parent)
-    {
-        if (parent == null) return null;
-        foreach (var child in parent.GetChildren())
-        {
-            if (child is Control { FocusMode: FocusModeEnum.All or FocusModeEnum.Click } control)
-                return control;
-
-            var nestedFocus = FindFirstFocusable(child);
-            if (nestedFocus != null)
-                return nestedFocus;
-        }
-
-        return null;
-    }
-
     public override void _Process(double delta)
     {
         base._Process(delta);
+        if (_isUsingController)
+            CreateControllerNavEcho(delta);
+
         if (_saveTimer <= 0) return;
         _saveTimer -= delta;
         if (_saveTimer <= 0)
         {
             SaveCurrentConfig();
         }
+    }
+
+    // Send repeat events of up/down inputs to allow easier movement on controllers
+    private void CreateControllerNavEcho(double delta)
+    {
+        var currentAction =
+            Input.IsActionPressed(MegaInput.down) ? MegaInput.down :
+            Input.IsActionPressed(MegaInput.up) ? MegaInput.up :
+            null;
+
+        if (currentAction != _heldNavAction)
+        {
+            _heldNavAction = currentAction;
+            _navRepeatTimer = InitialRepeatDelay;
+            return;
+        }
+
+        if (currentAction == null) return;
+
+        _navRepeatTimer -= delta;
+        if (_navRepeatTimer > 0) return;
+        _navRepeatTimer = RepeatRate;
+
+        Input.ParseInputEvent(new InputEventAction
+        {
+            Action = currentAction,
+            Pressed = true
+        });
     }
 
     private void SaveCurrentConfig()
@@ -534,6 +593,7 @@ public partial class NModConfigSubmenu : NSubmenu
     public override void _ExitTree()
     {
         GetViewport().Disconnect(Viewport.SignalName.SizeChanged, Callable.From(RefreshSize));
+        GetViewport().Disconnect(Viewport.SignalName.GuiFocusChanged, Callable.From<Control>(OnGlobalFocusChanged));
         NControllerManager.Instance?.Disconnect(NControllerManager.SignalName.MouseDetected,
             Callable.From(InputTypeChanged));
         NControllerManager.Instance?.Disconnect(NControllerManager.SignalName.ControllerDetected,

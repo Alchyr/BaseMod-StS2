@@ -1,6 +1,8 @@
 ﻿using Godot;
+using HarmonyLib;
 using MegaCrit.Sts2.Core.Assets;
 using MegaCrit.Sts2.Core.Helpers;
+using MegaCrit.Sts2.Core.Nodes.CommonUi;
 using MegaCrit.Sts2.Core.Nodes.GodotExtensions;
 
 namespace BaseLib.Config.UI;
@@ -10,12 +12,14 @@ public partial class NNativeScrollableContainer : NScrollableContainer
     private Control _clipper;
     private TextureRect _fadeMask;
     private Gradient _maskGradient;
-    private Control? _attachedContent;
 
     private float _topPadding;
     private float _bottomPadding;
 
     public const float ScrollbarGutterWidth = 60f;
+    private const float BottomFade = 70f;
+    private const float TopFade = 24f;
+
     public float AvailableContentWidth => Mathf.Max(0f, Size.X - ScrollbarGutterWidth);
 
     public NNativeScrollableContainer(float topPadding = 0f, float bottomPadding = 0f)
@@ -80,13 +84,11 @@ public partial class NNativeScrollableContainer : NScrollableContainer
 
     public void AttachContent(Control contentPanel)
     {
-        if (_attachedContent != null) _attachedContent.Resized -= OnContentResized;
+        if (_content != null) _content.Resized -= OnContentResized;
 
-        _attachedContent = contentPanel;
         _clipper.AddChild(contentPanel);
         SetContent(contentPanel);
-
-        _attachedContent.Resized += OnContentResized;
+        _content!.Resized += OnContentResized;
         OnContainerResized(); // Initial setup
     }
 
@@ -94,9 +96,6 @@ public partial class NNativeScrollableContainer : NScrollableContainer
     {
         var actualHeight = Size.Y;
         if (actualHeight <= 0) return;
-
-        const float BottomFade = 70f;
-        const float TopFade = 24f;
 
         _maskGradient.Offsets = [
             0f,
@@ -106,19 +105,94 @@ public partial class NNativeScrollableContainer : NScrollableContainer
             FromTop(_topPadding)
         ];
 
+        UpdateScrollLimitBottomOverride();
         OnContentResized();
         return;
 
         float FromTop(float px) => 1f - px / actualHeight;
     }
 
+    public void ScrollToFocusedControl(bool skipAnimation)
+    {
+        if (_content == null || !IsVisibleInTree()) return;
+
+        var focusedControl = GetViewport().GuiGetFocusOwner();
+        if (focusedControl == null || focusedControl is NDropdownItem || !_content.IsAncestorOf(focusedControl)) return;
+
+        var unclampedTarget = _content.GlobalPosition.Y - focusedControl.GlobalPosition.Y + ScrollViewportSize * 0.5f;
+        _targetDragPosY = Mathf.Clamp(unclampedTarget, Mathf.Min(ScrollLimitBottom, 0f), 0f);
+
+        // base._Process handles the Lerp etc.
+        if (!skipAnimation) return;
+
+        // Update position and scrollbar instantly so the _Process Lerp doesn't do anything
+        _content.Position = _content.Position with
+        {
+            Y = _paddingTop + _targetDragPosY
+        };
+
+        if (ScrollLimitBottom >= 0.0f) return;
+        var scrollFraction = Mathf.Clamp(_targetDragPosY / ScrollLimitBottom, 0.0, 1.0);
+        Scrollbar.SetValueWithoutAnimation(scrollFraction * 100.0);
+    }
+
+    // Hack to "override" the non-virtual base method
+    [HarmonyPatch(typeof(NScrollableContainer), nameof(NScrollableContainer.UpdateScrollLimitBottom))]
+    public static class NScrollableContainer_UpdateScrollLimitBottom_Patch
+    {
+        public static bool Prefix(NScrollableContainer __instance)
+        {
+            if (__instance is not NNativeScrollableContainer self) return true;
+
+            self.UpdateScrollLimitBottomOverride();
+            return false;
+        }
+    }
+
+    // Note: this is called on ItemRectChanged, which means it is called *on scroll* as well as on resize.
+    private void UpdateScrollLimitBottomOverride()
+    {
+        if (_content == null) return;
+
+        var wasVisible = Scrollbar.Visible;
+
+        // We don't need nor want sub-pixel accuracy
+        const float Epsilon = 1f;
+
+        // Scroll fix #1: base game decides scrollbar visibility based solely on contentHeight > ViewportSize; this
+        // doesn't take being scrolled down into account, so the scrollbar disappears when scrolled down if the content
+        // "fits", despite some being offscreen.
+        var contentFits = _content.Size.Y + _paddingTop + _paddingBottom - Epsilon <= ScrollViewportSize;
+        var scrollIsAtTop = -_content.Position.Y <= _paddingTop + Epsilon;
+        Scrollbar.Visible = !contentFits || !scrollIsAtTop;
+        Scrollbar.MouseFilter = Scrollbar.Visible ? MouseFilterEnum.Stop : MouseFilterEnum.Ignore;
+
+        // Prevent a jerk when the height changes to require scrolling: base._Process has been suspended and will
+        // try to lerp if the target position doesn't match the current, so make it match
+        if (!wasVisible && Scrollbar.Visible)
+            _targetDragPosY = _content.Position.Y - _paddingTop;
+
+        // Update the fade mask, to not fade the top/bottom if everything fits clearly, or if at the top
+        _fadeMask.ClipChildren = Scrollbar.Visible ? ClipChildrenMode.Only : ClipChildrenMode.Disabled;
+        _fadeMask.SelfModulate = new Color(1f, 1f, 1f, Scrollbar.Visible ? 1f : 0f);
+
+        if (!Scrollbar.Visible) return;
+        var scrollDistanceFromTop = Mathf.Max(0f, _paddingTop - _content.Position.Y);
+        var topAlpha = 1f - Mathf.Clamp(scrollDistanceFromTop / TopFade, 0f, 1f);
+
+        var colors = _maskGradient.Colors;
+        colors[4] = new Color(1f, 1f, 1f, topAlpha);
+        _maskGradient.Colors = colors;
+    }
+
+    // UpdateScrollLimitBottomOverride is called on resize by the base game + Harmony patch above, so this only needs to
+    // handle the logic that method does not perform.
     private void OnContentResized()
     {
-        if (_attachedContent == null) return;
+        if (_content == null) return;
 
-        var needsScroll = _attachedContent.Size.Y > _clipper.Size.Y;
-        Scrollbar.Visible = needsScroll;
-        _fadeMask.ClipChildren = needsScroll ? ClipChildrenMode.Only : ClipChildrenMode.Disabled;
-        _fadeMask.SelfModulate = new Color(1f, 1f, 1f, needsScroll ? 1f : 0f);
+        // Scroll fix #2: base game scrollbar value doesn't update when the content changes, so update it now.
+        // Fixes jumps when you scroll after content size changes.
+        Scrollbar.SetValueNoSignal(Mathf.Clamp((_content.Position.Y - _paddingTop) / ScrollLimitBottom, 0.0f, 1f) * 100.0);
     }
 }

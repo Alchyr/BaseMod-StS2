@@ -1,6 +1,7 @@
 ﻿using System.Reflection;
 using BaseLib.Utils;
 using Godot;
+using HarmonyLib;
 using MegaCrit.Sts2.Core.Helpers;
 using MegaCrit.Sts2.Core.Localization;
 using MegaCrit.Sts2.Core.Nodes.CommonUi;
@@ -8,6 +9,13 @@ using MegaCrit.Sts2.Core.Nodes.GodotExtensions;
 using MegaCrit.Sts2.Core.Nodes.Screens.Settings;
 
 namespace BaseLib.Config.UI;
+
+[HarmonyPatch(typeof(NDropdownPositioner), nameof(NDropdownPositioner.OnVisibilityChange))]
+public static class NDropdownPositioner_OnVisibilityChange_Patch
+{
+    // This method doesn't do anything useful for us; in fact, it simply ruins our focus neighbor setup.
+    public static bool Prefix(NDropdownPositioner __instance) => __instance._dropdownNode is not NConfigDropdown;
+}
 
 public partial class NConfigDropdown : NSettingsDropdown
 {

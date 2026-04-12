@@ -1,11 +1,16 @@
 ﻿using System.Reflection;
 using Godot;
+using MegaCrit.Sts2.Core.Assets;
+using MegaCrit.Sts2.Core.Helpers;
+using MegaCrit.Sts2.Core.Nodes.Combat;
+using MegaCrit.Sts2.Core.Nodes.CommonUi;
 
 namespace BaseLib.Config.UI;
 
 public partial class NConfigColorPicker : CenterContainer
 {
     public static readonly Type[] SupportedTypes = [typeof(Color), typeof(string)];
+    private NSelectionReticle _selectionReticle;
     private ColorPickerButton _button;
     private ColorPicker _picker;
     private Popup _popup;
@@ -20,6 +25,7 @@ public partial class NConfigColorPicker : CenterContainer
         SizeFlagsHorizontal = SizeFlags.ShrinkEnd;
         SizeFlagsVertical = SizeFlags.Fill;
         MouseFilter = MouseFilterEnum.Ignore;
+        FocusMode = FocusModeEnum.None;
 
         _button = new ColorPickerButton
         {
@@ -27,6 +33,7 @@ public partial class NConfigColorPicker : CenterContainer
             PivotOffset = new Vector2(22, 22),
             SizeFlagsHorizontal = SizeFlags.ShrinkCenter,
             SizeFlagsVertical = SizeFlags.ShrinkCenter,
+            FocusMode = FocusModeEnum.All,
             MouseFilter = MouseFilterEnum.Stop,
             EditAlpha = true,
             EditIntensity = false
@@ -35,6 +42,15 @@ public partial class NConfigColorPicker : CenterContainer
         AddChild(_button);
         _picker = _button.GetPicker();
         _popup = _button.GetPopup();
+
+        var reticleScene = PreloadManager.Cache.GetScene(SceneHelper.GetScenePath("ui/selection_reticle"));
+        _selectionReticle = reticleScene.Instantiate<NSelectionReticle>();
+        _selectionReticle.Name = "SelectionReticle";
+        _selectionReticle.SetAnchorsAndOffsetsPreset(LayoutPreset.FullRect, margin: -12);
+        _button.AddChild(_selectionReticle);
+
+        _button.Connect(Godot.Control.SignalName.FocusEntered, Callable.From(OnFocus));
+        _button.Connect(Godot.Control.SignalName.FocusExited, Callable.From(OnUnfocus));
 
         var style = new StyleBoxFlat
         {
@@ -118,6 +134,19 @@ public partial class NConfigColorPicker : CenterContainer
         _tween?.Kill();
         _tween = CreateTween().SetParallel();
         _tween.TweenProperty(_button, "scale", Vector2.One, 0.5).SetEase(Tween.EaseType.Out).SetTrans(Tween.TransitionType.Expo);
+    }
+
+    private void OnFocus()
+    {
+        if (NControllerManager.Instance?.IsUsingController != true) return;
+        _selectionReticle.OnSelect();
+        OnHover();
+    }
+
+    private void OnUnfocus()
+    {
+        _selectionReticle.OnDeselect();
+        OnUnhover();
     }
 
     public override void _ExitTree()

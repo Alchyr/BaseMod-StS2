@@ -481,7 +481,7 @@ public abstract partial class ModConfig
 
         var dropdownPositioner = new NDropdownPositioner();
         dropdownPositioner.SetCustomMinimumSize(new(324, 64));
-        dropdownPositioner.FocusMode = Control.FocusModeEnum.All;
+        dropdownPositioner.FocusMode = Control.FocusModeEnum.None;
         dropdownPositioner.SizeFlagsHorizontal = Control.SizeFlags.ShrinkEnd;
         dropdownPositioner.SizeFlagsVertical = Control.SizeFlags.Fill;
 

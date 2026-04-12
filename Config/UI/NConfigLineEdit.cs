@@ -1,9 +1,12 @@
 ﻿using System.Reflection;
 using System.Text.RegularExpressions;
 using Godot;
+using MegaCrit.Sts2.Core.Assets;
 using MegaCrit.Sts2.Core.ControllerInput;
 using MegaCrit.Sts2.Core.Helpers;
 using MegaCrit.Sts2.Core.Localization;
+using MegaCrit.Sts2.Core.Nodes.Combat;
+using MegaCrit.Sts2.Core.Nodes.CommonUi;
 using MegaCrit.Sts2.Core.Nodes.GodotExtensions;
 
 namespace BaseLib.Config.UI;
@@ -13,6 +16,7 @@ public partial class NConfigLineEdit : NMegaLineEdit
     private ModConfig? _config;
     private PropertyInfo? _property;
 
+    private NSelectionReticle _selectionReticle;
     private StyleBoxFlat? _focusInvalid;
     private Regex? _validationRegex;
     private string _lastValidText = "";
@@ -73,8 +77,15 @@ public partial class NConfigLineEdit : NMegaLineEdit
        _focusInvalid.SetCornerRadiusAll(3);
        _focusInvalid.SetExpandMarginAll(2);
 
+       var reticleScene = PreloadManager.Cache.GetScene(SceneHelper.GetScenePath("ui/selection_reticle"));
+       _selectionReticle = reticleScene.Instantiate<NSelectionReticle>();
+       _selectionReticle.Name = "SelectionReticle";
+       _selectionReticle.SetAnchorsAndOffsetsPreset(LayoutPreset.FullRect, margin: -12);
+       AddChild(_selectionReticle);
+
        Connect(Godot.LineEdit.SignalName.TextChanged, Callable.From<string>(OnTextChanged));
        Connect(Godot.LineEdit.SignalName.TextSubmitted, Callable.From<string>(OnTextSubmitted));
+       Connect(Godot.Control.SignalName.FocusEntered, Callable.From(OnFocus));
        Connect(Godot.Control.SignalName.FocusExited, Callable.From(OnUnfocus));
     }
 
@@ -115,9 +126,16 @@ public partial class NConfigLineEdit : NMegaLineEdit
         ReleaseFocus();
     }
 
+    private void OnFocus()
+    {
+        if (NControllerManager.Instance?.IsUsingController == true)
+            _selectionReticle.OnSelect();
+    }
+
     private void OnUnfocus()
     {
         RevertIfInvalid();
+        _selectionReticle.OnDeselect();
     }
 
     private void RevertIfInvalid()

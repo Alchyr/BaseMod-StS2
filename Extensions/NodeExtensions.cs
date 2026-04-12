@@ -11,4 +11,17 @@ public static class NodeExtensions
         n.AddChild(child);
         child.Owner = n;
     }
+
+    public static Control? FindFirstFocusable(this Node? node)
+    {
+        if (node == null) return null;
+        if (node is Control { FocusMode: Control.FocusModeEnum.All or Control.FocusModeEnum.Click } control)
+            return control;
+
+        return node
+            .GetChildren()
+            .Select(FindFirstFocusable)
+            .OfType<Control>()
+            .FirstOrDefault();
+    }
 }

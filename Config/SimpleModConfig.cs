@@ -1,6 +1,7 @@
 ﻿using System.Diagnostics;
 using System.Reflection;
 using BaseLib.Config.UI;
+using BaseLib.Extensions;
 using Godot;
 using MegaCrit.Sts2.Core.Localization;
 using MegaCrit.Sts2.Core.Nodes.CommonUi;
@@ -31,6 +32,7 @@ public class SimpleModConfig : ModConfig
         BaseLibMain.Logger.Info($"Setting up SimpleModConfig {GetType().FullName}");
         GenerateOptionsForAllProperties(optionContainer);
         AddRestoreDefaultsButton(optionContainer);
+        SetupFocusNeighbors(optionContainer);
     }
 
     protected void AddRestoreDefaultsButton(Control optionContainer)
@@ -55,11 +57,6 @@ public class SimpleModConfig : ModConfig
         centerContainer.AddChild(resetButton);
 
         optionContainer.AddChild(centerContainer);
-
-        var selfNodePath = new NodePath(".");
-        resetButton.FocusNeighborBottom = selfNodePath;
-        resetButton.FocusNeighborLeft = selfNodePath;
-        resetButton.FocusNeighborRight = selfNodePath;
     }
 
     public async Task ConfirmRestoreDefaults()
@@ -111,6 +108,7 @@ public class SimpleModConfig : ModConfig
         var control = CreateRawButtonControl(GetLabelText(buttonLabelKey), onPressed);
         var label = CreateRawLabelControl(GetLabelText(rowLabelKey), 28);
         var option = new NConfigOptionRow(ModPrefix, rowLabelKey, label, control);
+        control.ClearFocusNeighbors();
         if (addHoverTip) option.AddHoverTip();
         return option;
     }
@@ -152,6 +150,7 @@ public class SimpleModConfig : ModConfig
         var control = controlCreator.Invoke(property);
         var label = CreateRawLabelControl(GetLabelText(property.Name), 28);
         var option = new NConfigOptionRow(ModPrefix, property.Name, label, control);
+        control.ClearFocusNeighbors();
         if (addHoverTip) option.AddHoverTip();
         return option;
     }
@@ -279,7 +278,6 @@ public class SimpleModConfig : ModConfig
     {
         var sections = new SectionTracker();
         var dividers = new DividerTracker();
-        Control? currentSetting = null;
 
         var filteredMembers = GetFilteredMembers(GetType());
 
@@ -336,11 +334,6 @@ public class SimpleModConfig : ModConfig
                 _configReloadedHandlers.Add(triggerVisibilityUpdate);
             }
 
-            // Set up focus neighbors (mainly for controllers)
-            var previousSetting = currentSetting;
-            currentSetting = newRow.SettingControl;
-            SetupFocusNeighbors(previousSetting, currentSetting);
-
             // Add a divider if appropriate, and assign it to the visibility tracking
             var nextSectionName = nextRowMember?.GetCustomAttribute<ConfigSectionAttribute>()?.Name;
             var nextIsSameSection = nextSectionName == null || nextSectionName == sections.CurrentSectionName;
@@ -355,26 +348,47 @@ public class SimpleModConfig : ModConfig
 
         }
 
-        // Ensure the final state is correct for header visibility: the final visibility isn't known until the section
+        // Ensure the final state is correct for visibility: the final visibility isn't known until the section
         // has been fully built.
         sections.UpdateAllHeaderVisibility();
+        dividers.UpdateAll();
     }
 
-    private static void SetupFocusNeighbors(Control? previousSetting, Control currentSetting)
+    /// <summary>
+    /// Connects the first focusable control on each row (each optionContainer child) to each other, for controller
+    /// (and keyboard) navigation.<br/>
+    /// You can run this if you've added or modified controls in some way, to ensure navigation doesn't skip over
+    /// controls, which can happen when Godot tries to guess which control is "next" or "previous" when you navigate.
+    /// </summary>
+    /// <param name="optionContainer">The optionContainer passed to your SetupConfigUI method</param>
+    public static void SetupFocusNeighbors(Control optionContainer)
     {
-        if (previousSetting != null)
-        {
-            currentSetting.FocusNeighborTop = currentSetting.GetPathTo(previousSetting);
-            previousSetting.FocusNeighborBottom = previousSetting.GetPathTo(currentSetting);
-        }
-        else
-        {
-            // Prevent unintended movement to the mod list
-            currentSetting.FocusNeighborTop = selfNodePath;
-        }
+        var focusTargets = optionContainer
+            .GetChildren()
+            .OfType<Control>()
+            .Select(c => c.FindFirstFocusable())
+            .OfType<Control>() // Filter out nulls
+            .ToList();
 
-        currentSetting.FocusNeighborLeft = selfNodePath;
-        currentSetting.FocusNeighborRight = selfNodePath;
+        if (focusTargets.Count == 0) return;
+
+        // Connect each control to the one above/below, and wrap top->bottom and bottom->top
+        for (var i = 0; i < focusTargets.Count; i++)
+        {
+            var current = focusTargets[i];
+
+            // Wrap around
+            var prevTarget = i == 0 ? focusTargets[^1] : focusTargets[i - 1];
+            var nextTarget = i == focusTargets.Count - 1 ? focusTargets[0] : focusTargets[i + 1];
+
+            // Only assign if the mod hasn't explicitly set something up manually, just in case
+            if (current.FocusNeighborTop.IsEmpty) current.FocusNeighborTop = prevTarget.GetPath();
+            if (current.FocusNeighborBottom.IsEmpty) current.FocusNeighborBottom = nextTarget.GetPath();
+
+            // Lock horizontal navigation to the control itself by default
+            if (current.FocusNeighborLeft.IsEmpty) current.FocusNeighborLeft = selfNodePath;
+            if (current.FocusNeighborRight.IsEmpty) current.FocusNeighborRight = selfNodePath;
+        }
     }
 
     private List<MemberInfo> GetFilteredMembers(Type type)

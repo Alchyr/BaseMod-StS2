@@ -38,4 +38,13 @@ public static class ControlExtensions
             control.AddThemeFontSizeOverride(fontType, fontSize);
         }
     }
+
+    private static readonly NodePath EmptyNodePath = new();
+    public static void ClearFocusNeighbors(this Control control)
+    {
+        control.FocusNeighborTop = EmptyNodePath;
+        control.FocusNeighborBottom = EmptyNodePath;
+        control.FocusNeighborLeft = EmptyNodePath;
+        control.FocusNeighborRight = EmptyNodePath;
+    }
 }
