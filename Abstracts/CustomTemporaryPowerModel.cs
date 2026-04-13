@@ -1,4 +1,5 @@
-﻿using MegaCrit.Sts2.Core.Combat;
+﻿using BaseLib.Patches.Localization;
+using MegaCrit.Sts2.Core.Combat;
 using MegaCrit.Sts2.Core.Commands;
 using MegaCrit.Sts2.Core.Entities.Creatures;
 using MegaCrit.Sts2.Core.Entities.Powers;
@@ -13,9 +14,14 @@ namespace BaseLib.Abstracts;
 /// <summary>
 /// A generic version of the base games Temporary Strength and Dexterity Power with small functionality improvements
 /// </summary>
-public abstract class CustomTemporaryPowerModel : CustomPowerModel, ITemporaryPower
+public abstract class CustomTemporaryPowerModel : CustomPowerModel, ITemporaryPower, IAddDumbVariablesToPowerDescription
 {
      private const string LocTurnEndBoolVar = "UntilEndOfOtherSideTurn";
+     
+     public void AddDumbVariablesToPowerDescription(LocString description)
+     {
+         description.Add("TemporaryPowerTitle", this.InternallyAppliedPower.Title);
+     }
 
     protected abstract Func<Creature, decimal, Creature?, CardModel?, bool, Task> ApplyPowerFunc { get; }
     public abstract PowerModel InternallyAppliedPower { get; }
