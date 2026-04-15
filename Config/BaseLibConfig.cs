@@ -3,7 +3,7 @@ using Godot;
 
 namespace BaseLib.Config;
 
-[HoverTipsByDefault]
+[ConfigHoverTipsByDefault]
 internal class BaseLibConfig : SimpleModConfig
 {
     // Should likely be at the top, as an easy and obvious opt-out
@@ -12,16 +12,14 @@ internal class BaseLibConfig : SimpleModConfig
     [ConfigSection("LogSection")]
     public static bool OpenLogWindowOnStartup { get; set; } = false;
 
-    [SliderRange(128, 2048, 64)]
-    [SliderLabelFormat("{0:0} lines")]
+    [ConfigSlider(128, 2048, 64, Format = "{0:0} lines")]
     public static int LimitedLogSize { get; set; } = 256;
 
-    [SliderRange(8, 48)]
-    [SliderLabelFormat("{0:0} px")]
+    [ConfigSlider(8, 48, Format = "{0:0} px")]
     public static int LogFontSize { get; set; } = 14;
 
     [ConfigSection("HarmonyDumpSection")]
-    [ConfigTextInput(TextInputPreset.Anything, MaxLength = 1024)]
+    [ConfigTextInput(MaxLength = 1024)]
     public static string HarmonyPatchDumpOutputPath { get; set; } = "";
 
     public static bool HarmonyPatchDumpOnFirstMainMenu { get; set; }
