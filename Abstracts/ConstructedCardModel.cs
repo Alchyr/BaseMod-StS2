@@ -61,6 +61,10 @@ public abstract class ConstructedCardModel(
         _constructedDynamicVars.Add(new DynamicVar(name, baseVal).WithUpgrade(upgrade));
         return this;
     }
+    protected ConstructedCardModel WithVar(DynamicVar var)
+    {
+        return WithVars(var);
+    }
     
     /// <summary>
     /// Generates a <seealso cref="BlockVar"/>BlockVar with given base value.
