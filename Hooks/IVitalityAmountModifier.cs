@@ -2,7 +2,7 @@
 using MegaCrit.Sts2.Core.Entities.Creatures;
 using MegaCrit.Sts2.Core.Models;
 
-namespace TestMod.TestModCode.Hooks;
+namespace BaseLib.Hooks;
 
 public interface IVitalityAmountModifier
 {

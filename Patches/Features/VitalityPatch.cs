@@ -6,21 +6,14 @@ using Godot;
 using HarmonyLib;
 using MegaCrit.Sts2.addons.mega_text;
 using MegaCrit.Sts2.Core.Combat;
-using MegaCrit.Sts2.Core.Commands;
-using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.Entities.Creatures;
-using MegaCrit.Sts2.Core.Entities.Players;
 using MegaCrit.Sts2.Core.Helpers;
-using MegaCrit.Sts2.Core.Models;
 using MegaCrit.Sts2.Core.Nodes.Combat;
 using MegaCrit.Sts2.Core.Nodes.Multiplayer;
-using MegaCrit.Sts2.Core.Runs;
 using MegaCrit.Sts2.Core.Saves;
 using MegaCrit.Sts2.Core.Settings;
-using TestMod.TestModCode.Hooks;
-using TestMod.TestModCode.Ui;
 
-namespace TestMod.TestModCode.Patches;
+namespace BaseLib.Patches.Features;
 
 public static class VitalityPatch
 {
@@ -61,7 +54,7 @@ public static class VitalityPatch
     [HarmonyPatch("LoseHpInternal")]
     public class HpInterceptPatch
     {
-        private static int temporaryHp;
+        // private static int temporaryHp;
         
         static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
         {
@@ -69,7 +62,7 @@ public static class VitalityPatch
             MethodInfo getCurrentHpInfo = AccessTools.PropertyGetter(typeof(Creature), nameof(Creature.CurrentHp));
 
             MethodInfo tempHp = AccessTools.Method(typeof(HpInterceptPatch), nameof(TemporaryHpHandler));
-            MethodInfo unblockedOverride = AccessTools.Method(typeof(HpInterceptPatch), nameof(UnblockedDamageOverride));
+            // MethodInfo unblockedOverride = AccessTools.Method(typeof(HpInterceptPatch), nameof(UnblockedDamageOverride));
 
             codeMatcher.MatchStartForward(
                     new CodeMatch(OpCodes.Ldarg_0),
@@ -84,7 +77,7 @@ public static class VitalityPatch
                     new CodeInstruction(OpCodes.Stloc_2)
                 );
             
-            codeMatcher.MatchStartForward(
+            /*codeMatcher.MatchStartForward(
                     new CodeMatch(OpCodes.Ldloc_1),
                     new CodeMatch(OpCodes.Ldarg_0),
                     new CodeMatch(OpCodes.Call, getCurrentHpInfo),
@@ -94,14 +87,14 @@ public static class VitalityPatch
                 .InsertAfterAndAdvance(
                     new CodeMatch(OpCodes.Ldarg_0),
                     new CodeInstruction(OpCodes.Call, unblockedOverride)
-                );
+                );*/
             
             return codeMatcher.InstructionEnumeration();
         }
 
         private static int TemporaryHpHandler(Creature c, int num)
         {
-            int tempHp = temporaryHp = (int) VitalityField.GetVitality(c);
+            int tempHp = (int) VitalityField.GetVitality(c);
             if (num >= tempHp)
             {
                 num -= tempHp;
@@ -115,6 +108,7 @@ public static class VitalityPatch
             return num;
         }
         
+        /* Code for making Vitality trigger HP Loss effects. 
         private static int UnblockedDamageOverride(int unblockedDamage, Creature c)
         {
             if (TestModConfig.TriggerHpLoss)
@@ -123,7 +117,7 @@ public static class VitalityPatch
                 return unblockedDamage + temporaryHp;
             }
             return unblockedDamage;
-        }
+        }*/
     }
     
     [HarmonyPatch(typeof(NHealthBar))]
@@ -174,7 +168,7 @@ public static class VitalityPatch
         }
     }
     
-    // Code courtesy of CanYou with mild alterations.
+    // Code courtesy of CanYou with alterations.
     [HarmonyPatch]
     public static class VitalityHealthBarPatch
     {
@@ -251,6 +245,8 @@ public static class VitalityPatch
                 __instance._blockContainer.Position.Y);
         }
     }
+
+    // Enables a Vitality "Overflow" on the bar where if it loops over it changes colors. Subject to change.
     private static readonly Color[] HbColors = 
         [Colors.Gold, Colors.Green, Colors.MediumAquamarine, Colors.MediumVioletRed];
 

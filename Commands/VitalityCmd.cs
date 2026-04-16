@@ -1,16 +1,13 @@
 ﻿using MegaCrit.Sts2.Core.Combat;
 using MegaCrit.Sts2.Core.Combat.History;
-using MegaCrit.Sts2.Core.Combat.History.Entries;
 using MegaCrit.Sts2.Core.Commands;
 using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.Entities.Creatures;
 using MegaCrit.Sts2.Core.Models;
-using MegaCrit.Sts2.Core.Runs;
-using MegaCrit.Sts2.Core.ValueProps;
-using TestMod.TestModCode.Hooks;
-using TestMod.TestModCode.Patches;
+using BaseLib.Hooks;
+using BaseLib.Patches;
 
-namespace TestMod.TestModCode.Commands;
+namespace BaseLib.Commands;
 
 public class VitalityCmd
 {
@@ -130,7 +127,7 @@ public class VitalityCmd
         }
     }
     
-    public class VitalityGainedEntry : CombatHistoryEntry
+    private class VitalityGainedEntry : CombatHistoryEntry
     {
         public int Amount { get; }
 
