@@ -11,7 +11,7 @@ public class RefundVar : DynamicVar
 {
     public const string Key = "Refund";
 
-    public RefundVar(decimal persistCount) : base(Key, persistCount)
+    public RefundVar(decimal refundAmount) : base(Key, refundAmount)
     {
         this.WithTooltip();
     }

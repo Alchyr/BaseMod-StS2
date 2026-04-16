@@ -311,7 +311,7 @@ public static class AddActContent
 
         foreach (var eventModel in CustomContentDictionary.ActCustomEvents)
         {
-            if (eventModel.Acts.Contains(__instance)) yield return eventModel;
+            if (eventModel.Acts.Any(act => act.Id.Equals(__instance.Id))) yield return eventModel;
         }
     }
 }

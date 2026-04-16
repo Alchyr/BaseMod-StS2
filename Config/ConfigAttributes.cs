@@ -14,38 +14,37 @@ public class ConfigSectionAttribute(string name) : Attribute
 }
 
 /// <summary>
-/// Specifies a range and step for a slider. Negative numbers are supported, as are noninteger numbers.<br/>
+/// Specifies settings for a slider: range, step and label format string. Negative numbers are supported, as are
+/// noninteger numbers.<br/>
 /// Supported property types: <see cref="int"/>, <see cref="float"/>, <see cref="double"/>.
 /// </summary>
 [AttributeUsage(AttributeTargets.Property)]
-public class SliderRangeAttribute : Attribute
+public class ConfigSliderAttribute(double min = 0.0, double max = 100.0, double step = 1.0) : Attribute
 {
-    public double Min { get; }
-    public double Max { get; }
-    public double Step { get; }
+    /// <summary>The minimum value the user can select.</summary>
+    public double Min { get; } = min;
 
-    public SliderRangeAttribute(double min, double max, double step = 1.0)
-    {
-        if (min > max)
-        {
-            throw new ArgumentException($"SliderRange: Min ({min}) cannot be greater than Max ({max}).");
-        }
+    /// <summary>The maximum value the user can select.</summary>
+    public double Max { get; } = max;
 
-        if (step <= 0)
-        {
-            throw new ArgumentOutOfRangeException(nameof(step), "SliderRange: Step must be greater than 0.");
-        }
+    /// <summary>The smallest step between two values, and the amount moved by a quick controller input.</summary>
+    public double Step { get; } = step;
 
-        Min = min;
-        Max = max;
-        Step = step;
-    }
+    /// <summary>
+    /// The string format to use for the slider's label.
+    /// Uses standard C# format, see <see cref="String.Format(string, object?)"/>.
+    /// </summary>
+    public string? Format { get; set; }
 }
 
-/// <summary>
-/// The string format to us for the slider's label. Uses standard C# format, see <see cref="String.Format(string, object?)"/>.
-/// </summary>
-/// <param name="format"></param>
+[Obsolete("Use [ConfigSlider] instead. This will be removed in future versions.")]
+[AttributeUsage(AttributeTargets.Property)]
+public class SliderRangeAttribute : ConfigSliderAttribute
+{
+    public SliderRangeAttribute(double min, double max, double step = 1.0) : base(min, max, step) { }
+}
+
+[Obsolete("Use the Format property on [ConfigSlider] instead. This will be removed in future versions.")]
 [AttributeUsage(AttributeTargets.Property)]
 public class SliderLabelFormatAttribute(string format) : Attribute
 {
@@ -58,7 +57,7 @@ public class SliderLabelFormatAttribute(string format) : Attribute
 /// YOURMOD-PROPERTY_NAME.hover.title (optional, if missing, no title will be shown)<br/>
 /// YOURMOD-PROPERTY_NAME.hover.desc (required)
 /// </summary>
-/// <param name="enabled">Enable hover tip for this property. Can be set to false in order to add exceptions for <see cref="HoverTipsByDefaultAttribute"/></param>
+/// <param name="enabled">Enable hover tip for this property. Can be set to false in order to add exceptions for <see cref="ConfigHoverTipsByDefaultAttribute"/></param>
 [AttributeUsage(AttributeTargets.Property | AttributeTargets.Method)]
 public class ConfigHoverTipAttribute(bool enabled = true) : Attribute
 {
@@ -70,7 +69,11 @@ public class ConfigHoverTipAttribute(bool enabled = true) : Attribute
 /// enabled=false to add exceptions. Still requires .hover.desc entries in your localization file, see <see cref="ConfigHoverTipAttribute"/>.
 /// </summary>
 [AttributeUsage(AttributeTargets.Class)]
-public class HoverTipsByDefaultAttribute : Attribute;
+public class ConfigHoverTipsByDefaultAttribute : Attribute;
+
+[Obsolete("Use [ConfigHoverTipsByDefault] instead. This will be removed in future versions.")]
+[AttributeUsage(AttributeTargets.Class)]
+public class HoverTipsByDefaultAttribute : ConfigHoverTipsByDefaultAttribute;
 
 /// <summary>
 /// Completely ignores this property. It will not be loaded or saved, and will not be shown for auto-generated UI.<br/>
@@ -80,10 +83,12 @@ public class HoverTipsByDefaultAttribute : Attribute;
 public class ConfigIgnoreAttribute : Attribute;
 
 /// <summary>
-/// Saves and loads this property to the config file normally, but generate no UI for it in SimpleModConfig.<br/>
+/// Saves and loads this property to the config file normally, but generates no UI for it in SimpleModConfig.<br/>
 /// Intended for when you want to create the UI manually, or easily persist things that aren't user-configurable (e.g.
 /// total gold gained / number of runs played with the mod active).
 /// </summary>
+// Should be ConfigHideInUIAttribute, but AFAIK we can't rename it without breaking: a rename breaks ABI compatibility,
+// and creating ConfigHideInUIAttribute + ConfigHideInUI that inherits from it causes compilation errors due to ambiguity.
 [AttributeUsage(AttributeTargets.Property)]
 public class ConfigHideInUI : Attribute;
 
@@ -114,6 +119,8 @@ public class ConfigTextInputAttribute : Attribute
 {
     public string AllowedCharactersRegex { get; }
     public int MaxLength { get; set; } = 0;
+
+    public ConfigTextInputAttribute() : this(TextInputPreset.Anything) { }
 
     public ConfigTextInputAttribute(TextInputPreset preset)
     {
@@ -168,14 +175,16 @@ public class ConfigButtonAttribute(string buttonLabelKey) : Attribute
 /// two integer values in the attribute.
 /// </para>
 /// </summary>
+/// <param name="targetName">The property to compare against, or method to call. Use <c>nameof(PropOrMethodName)</c>.</param>
+/// <param name="args">Optional arguments: see summary and examples.</param>
 /// <example>
 /// <b>Targeting a boolean property (argument optional, defaults to true):</b>
 /// <code>
 /// public static bool EnableCustomMusic { get; set; } = false;
 /// &#160;
 /// [ConfigVisibleIf(nameof(EnableCustomMusic))]
-/// [SliderRange(0f, 100f)]
-/// public static float MusicVolume { get; set; } = 50f;
+/// [ConfigSlider(0, 100)]
+/// public static float MusicVolume { get; set; } = 50;
 /// </code>
 ///
 /// <b>Targeting a property with multiple allowed arguments:</b>
@@ -185,13 +194,13 @@ public class ConfigButtonAttribute(string buttonLabelKey) : Attribute
 /// &#160;
 /// // Visible if StartingBonus is Standard or Huge
 /// [ConfigVisibleIf(nameof(StartingBonus), StartingBonusType.Standard, StartingBonusType.Huge)]
-/// [SliderRange(0, 500)]
+/// [ConfigSlider(0, 500)]
 /// public static int BonusStartingGold { get; set; } = 0;
 /// </code>
 ///
 /// <b>Targeting a method with PropertyInfo auto-injection:</b>
 /// <code>
-/// [SliderRange(1, 5)]
+/// [ConfigSlider(1, 5)]
 /// public static int NumCustomColors { get; set; } = 1;
 /// &#160;
 /// private static bool ShouldShowColorRow(PropertyInfo prop)
@@ -213,7 +222,7 @@ public class ConfigButtonAttribute(string buttonLabelKey) : Attribute
 ///
 /// <b>Targeting a method with explicitly injected arguments:</b>
 /// <code>
-/// [SliderRange(1, 5)]
+/// [ConfigSlider(1, 5)]
 /// public static int EliteCardRewardCount { get; set; } = 1;
 /// &#160;
 /// private static bool IsRewardCountBetween(int min, int max)
@@ -245,7 +254,7 @@ public class ConfigVisibleIfAttribute(string targetName, params object?[] args) 
 /// <param name="expectedValue">The value the watched property must have for this row to be visible.</param>
 /// <param name="invert">If true, the row is visible when the value does NOT match.</param>
 [AttributeUsage(AttributeTargets.Property | AttributeTargets.Method)]
-[Obsolete("No longer functional. Use ConfigVisibleIfAttribute instead.")]
+[Obsolete("No longer functional. Use ConfigVisibleIfAttribute instead.", error: true)]
 public class ConfigVisibleWhenAttribute(string watchedPropertyName, object expectedValue, bool invert = false) : Attribute
 {
     public string WatchedPropertyName { get; } = watchedPropertyName;

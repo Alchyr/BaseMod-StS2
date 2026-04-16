@@ -63,13 +63,15 @@ public partial class NConfigSlider : Control
     /// Updates the slider's limits (and optionally step) atomically, ensuring no issues where e.g. min > max occur,
     /// even briefly.<br/>
     /// The current value is clamped to fit inside [min, max].<br/>
-    /// Use <see cref="SliderRangeAttribute"/> instead if your values are known at compile time.
+    /// Use <see cref="ConfigSliderAttribute"/> instead if your values are known at compile time.
     /// </summary>
     /// <exception cref="ArgumentException">If min is greater than or equal to max</exception>
     public void SetRange(double min, double max, double? step = null)
     {
         if (min >= max)
             throw new ArgumentException($"Invalid slider range: min ({min}) must be less than max ({max}).");
+        if (step <= 0 || step > max - min)
+            throw new ArgumentException($"Invalid slider step: step must be greater than zero, and no larger than than max-min.");
 
         if (_property?.PropertyType == typeof(int))
         {
@@ -147,13 +149,16 @@ public partial class NConfigSlider : Control
         _config = modConfig;
         _property = property;
 
-        var formatAttr = property.GetCustomAttribute<SliderLabelFormatAttribute>();
-        _displayFormat = formatAttr?.Format ?? "{0}";
+        var sliderAttr = property.GetCustomAttribute<ConfigSliderAttribute>();
 
-        var rangeAttr = property.GetCustomAttribute<SliderRangeAttribute>();
-        var min = rangeAttr?.Min ?? 0;
-        var max = rangeAttr?.Max ?? 100;
-        var step = rangeAttr?.Step ?? 1;
+#pragma warning disable CS0618 // Type or member is obsolete
+        var legacyFormatAttr = property.GetCustomAttribute<SliderLabelFormatAttribute>();
+#pragma warning restore CS0618 // Type or member is obsolete
+
+        _displayFormat = sliderAttr?.Format ?? legacyFormatAttr?.Format ?? "{0}";
+        var min = sliderAttr?.Min ?? 0;
+        var max = sliderAttr?.Max ?? 100;
+        var step = sliderAttr?.Step ?? 1;
         SetRange(min, max, step);
     }
 

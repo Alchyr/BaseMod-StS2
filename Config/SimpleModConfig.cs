@@ -255,7 +255,7 @@ public class SimpleModConfig : ModConfig
     {
         // Create a HoverTip for this option row if appropriate
         var propertyHoverAttr = member.GetCustomAttribute<ConfigHoverTipAttribute>();
-        var classHoverAttr = GetType().GetCustomAttribute<HoverTipsByDefaultAttribute>();
+        var classHoverAttr = GetType().GetCustomAttribute<ConfigHoverTipsByDefaultAttribute>();
 
         var hoverTipsByDefault = classHoverAttr != null;
         var explicitHoverAttrEnabled = propertyHoverAttr?.Enabled;

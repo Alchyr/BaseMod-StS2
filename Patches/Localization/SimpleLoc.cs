@@ -50,8 +50,9 @@ public static partial class SimpleLoc
         }
     }
 
-    [GeneratedRegex(@"\*(.+?)\*?(\s|\b)")] private static partial Regex HighlightRegex { get; }
+    [GeneratedRegex(@"\*(.+?)(?:\*|(\s|\b))")] private static partial Regex HighlightRegex { get; }
 
+    [GeneratedRegex(@"({)([^:}.]+)([:}])")] private static partial Regex NormalVariableRegex { get; }
     [GeneratedRegex(@"!(.*?)!")] private static partial Regex DiffVariableRegex { get; }
     [GeneratedRegex(@"@(.*?)@")] private static partial Regex InverseVariableRegex { get; }
     
@@ -85,7 +86,9 @@ public static partial class SimpleLoc
     }
     private static string Simplify(string loc)
     {
+        if (loc.StartsWith('#')) return loc; //if loc starts with '##' remove first one and cancel simplify
         loc = HighlightRegex.Replace(loc, "[gold]$1[/gold]$2");
+        loc = NormalVariableRegex.Replace(loc, match => $"{match.Groups[1].Value}{SpecialVarDictionary.GetValueOrDefault(match.Groups[2].Value, match.Groups[2].Value)}{match.Groups[3].Value}");
         loc = DiffVariableRegex.Replace(loc, match => ReplaceVarName(match, ":diff()"));
         loc = InverseVariableRegex.Replace(loc, match => ReplaceVarName(match, ":inverseDiff()"));
         loc = EnergyIconsRegex.Replace(loc, MakeEnergyIcons);

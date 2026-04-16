@@ -17,6 +17,9 @@
   "BASELIB-OPEN_LOG_WINDOW_ON_STARTUP.title": "Open log window on startup",
   "BASELIB-OPEN_LOG_WINDOW_ON_STARTUP.hover.desc": "Opens the BaseLib log window automatically when the main menu loads.",
 
+  "BASELIB-OPEN_LOG_WINDOW_ON_ERROR.title": "Open log window on error",
+  "BASELIB-OPEN_LOG_WINDOW_ON_ERROR.hover.desc": "Opens the BaseLib log window automatically when an error occurs.",
+
   "BASELIB-LIMITED_LOG_SIZE.title": "Log history size",
   "BASELIB-LIMITED_LOG_SIZE.hover.desc": "Maximum number of lines retained in the in-game log window.",
 

@@ -10,6 +10,83 @@ namespace BaseLib.Commands;
 /// </summary>
 internal static class LogWindowPlacement
 {
+    internal static void SetupPosition(NLogWindow logWindow, Window host)
+    {
+        var targetScreen = host.CurrentScreen;
+        bool restoredPosition = TryRestorePosition(logWindow);
+        
+        if (!restoredPosition)
+        {
+            var screenCount = DisplayServer.GetScreenCount();
+            if (screenCount > 1)
+            {
+                for (var i = 0; i < screenCount; ++i)
+                {
+                    if (i == targetScreen) continue;
+                
+                    targetScreen = i;
+                    break;
+                }
+            }
+            logWindow.CurrentScreen = targetScreen;
+        }
+        else
+        {
+            targetScreen = logWindow.CurrentScreen;
+        }
+        
+        if (host.ContentScaleFactor > 0f)
+            logWindow.ContentScaleFactor = host.ContentScaleFactor;
+        
+        var screenRect = DisplayServer.ScreenGetUsableRect(targetScreen);
+
+        if (BaseLibConfig.LogLastSizeX > 0 && BaseLibConfig.LogLastSizeY > 0 &&
+            BaseLibConfig.LogLastSizeX <= screenRect.Size.X && BaseLibConfig.LogLastSizeY <= screenRect.Size.Y)
+        {
+            logWindow.Size = new Vector2I(BaseLibConfig.LogLastSizeX, BaseLibConfig.LogLastSizeY);
+        }
+        else
+        {
+            logWindow.Size = ComputeDefaultSize(targetScreen == host.CurrentScreen ? host.Size : screenRect.Size);
+        }
+        
+        // Restore failed: center the window. MoveToCenter crashes if Visible = false, which we want to prevent a flicker.
+        if (!restoredPosition)
+        {
+            logWindow.Position = screenRect.Position + screenRect.Size / 2 - logWindow.Size / 2;
+        }
+    }
+
+    /// <summary>
+    /// Load a saved position (if any), ensure it is on a visible screen, and restore it.
+    /// </summary>
+    /// <returns>True if position was valid and restored, otherwise false.</returns>
+    private static bool TryRestorePosition(Window logWindow)
+    {
+        var x = BaseLibConfig.LogLastPosX;
+        var y = BaseLibConfig.LogLastPosY;
+
+        // Position not saved; use default
+        if (x == int.MinValue && y == int.MinValue)
+            return false;
+
+        var logXSize = BaseLibConfig.LogLastSizeX > 0 ? BaseLibConfig.LogLastSizeX : logWindow.Size.X;
+        var logYSize = BaseLibConfig.LogLastSizeY  > 0 ? BaseLibConfig.LogLastSizeY : logWindow.Size.Y;
+
+        var center = new Vector2I(x + logXSize / 2, y + logYSize / 2);
+
+        for (var i = 0; i < DisplayServer.GetScreenCount(); i++)
+        {
+            if (!DisplayServer.ScreenGetUsableRect(i).HasPoint(center)) continue;
+
+            logWindow.CurrentScreen = i;
+            logWindow.Position = new Vector2I(x, y);
+            return true;
+        }
+
+        return false;
+    }
+    
     internal static Vector2I ComputeDefaultSize(Vector2I hostSize)
     {
         if (hostSize.X <= 0 || hostSize.Y <= 0)
@@ -26,49 +103,5 @@ internal static class LogWindowPlacement
         th = Mathf.Min(th, Mathf.Max(200, hostSize.Y - 32));
 
         return new Vector2I(tw, th);
-    }
-
-    internal static void ApplyHostWindowDefaults(NLogWindow logWindow, Window host)
-    {
-        logWindow.CurrentScreen = host.CurrentScreen;
-        if (host.ContentScaleFactor > 0f)
-            logWindow.ContentScaleFactor = host.ContentScaleFactor;
-
-        if (BaseLibConfig.LogLastSizeX > 0 && BaseLibConfig.LogLastSizeY > 0)
-            logWindow.Size = new Vector2I(BaseLibConfig.LogLastSizeX, BaseLibConfig.LogLastSizeY);
-        else
-            logWindow.Size = ComputeDefaultSize(host.Size);
-
-        if (TryRestorePosition(logWindow)) return;
-
-        // Restore failed: center the window. MoveToCenter crashes if Visible = false, which we want to prevent a flicker.
-        var screenRect = DisplayServer.ScreenGetUsableRect(host.CurrentScreen);
-        logWindow.Position = screenRect.Position + screenRect.Size / 2 - logWindow.Size / 2;
-    }
-
-    /// <summary>
-    /// Load a saved position (if any), ensure it is on a visible screen, and restore it.
-    /// </summary>
-    /// <returns>True if position was valid and restored, otherwise false.</returns>
-    private static bool TryRestorePosition(Window logWindow)
-    {
-        var x = BaseLibConfig.LogLastPosX;
-        var y = BaseLibConfig.LogLastPosY;
-
-        // Position not saved; use default
-        if (x == 0 && y == 0)
-            return false;
-
-        var center = new Vector2I(x + logWindow.Size.X / 2, y + logWindow.Size.Y / 2);
-
-        for (var i = 0; i < DisplayServer.GetScreenCount(); i++)
-        {
-            if (!DisplayServer.ScreenGetUsableRect(i).HasPoint(center)) continue;
-
-            logWindow.Position = new Vector2I(x, y);
-            return true;
-        }
-
-        return false;
     }
 }

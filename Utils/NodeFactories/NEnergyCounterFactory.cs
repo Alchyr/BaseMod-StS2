@@ -23,7 +23,7 @@ internal class NEnergyCounterFactory : NodeFactory<NEnergyCounter>
     public NEnergyCounterFactory() : base([
         new NodeInfo<MegaLabel>("Label"),
         new NodeInfo<Control>("%Layers"),
-        new NodeInfo<NParticlesContainer>("%RotationLayers"),
+        new NodeInfo<Control>("%RotationLayers"),
         new NodeInfo<NParticlesContainer>("%EnergyVfxBack"),
         new NodeInfo<NParticlesContainer>("%EnergyVfxFront"),
         new NodeInfo<NParticlesContainer>("%StarAnchor") //Custom

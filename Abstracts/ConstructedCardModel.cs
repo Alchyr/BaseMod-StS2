@@ -61,6 +61,10 @@ public abstract class ConstructedCardModel(
         _constructedDynamicVars.Add(new DynamicVar(name, baseVal).WithUpgrade(upgrade));
         return this;
     }
+    protected ConstructedCardModel WithVar(DynamicVar var)
+    {
+        return WithVars(var);
+    }
     
     /// <summary>
     /// Generates a <seealso cref="BlockVar"/>BlockVar with given base value.
@@ -98,6 +102,16 @@ public abstract class ConstructedCardModel(
         var dynVar = new EnergyVar(baseVal).WithUpgrade(upgrade);
         _constructedDynamicVars.Add(dynVar);
         WithEnergyTip();
+        return this;
+    }
+
+    /// <summary>
+    /// Generates a <seealso cref="HealVar"/>HealVar with given base value.
+    /// </summary>
+    protected ConstructedCardModel WithHeal(int baseVal, int upgrade = 0)
+    {
+        var dynVar = new HealVar(baseVal).WithUpgrade(upgrade);
+        _constructedDynamicVars.Add(dynVar);
         return this;
     }
     
