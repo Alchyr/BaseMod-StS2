@@ -1,3 +1,4 @@
+using System.Collections.Immutable;
 using System.Text.RegularExpressions;
 using BaseLib.Commands;
 using BaseLib.Config;
@@ -11,13 +12,18 @@ namespace BaseLib.BaseLibScenes;
 public partial class NLogWindow : Window
 {
     private static readonly LimitedLog _log = new(256);
-    private static readonly List<NLogWindow> _listeners = [];
+    private static readonly Lock _logLock = new();
+    private static ImmutableList<NLogWindow> _listeners = ImmutableList<NLogWindow>.Empty;
     private static bool _openedOnErr = false;
 
     public static void AddLog(string msg)
     {
-        EnsureLogLimit();
-        _log.Enqueue(msg);
+        lock (_logLock)
+        {
+            EnsureLogLimit();
+            _log.Enqueue(msg);
+        }
+
         foreach (var window in _listeners)
         {
             window.SetDirty();
@@ -53,13 +59,13 @@ public partial class NLogWindow : Window
     public override void _EnterTree()
     {
         base._EnterTree();
-        _listeners.Add(this);
+        ImmutableInterlocked.Update(ref _listeners, list => list.Add(this));
     }
 
     public override void _ExitTree()
     {
         base._ExitTree();
-        _listeners.Remove(this);
+        ImmutableInterlocked.Update(ref _listeners, list => list.Remove(this));
         if (_listeners.Count == 0) _openedOnErr = false;
     }
 
@@ -69,7 +75,7 @@ public partial class NLogWindow : Window
         OwnWorld3D = true;
 
         base._Ready();
-        EnsureLogLimit();
+        lock (_logLock) EnsureLogLimit();
 
         _scrollContainer = GetNode<ScrollContainer>("MainVBox/Scroll");
         _logLabel = GetNode<RichTextLabel>("MainVBox/Scroll/Log");
@@ -215,10 +221,13 @@ public partial class NLogWindow : Window
 
         var minLevel = (LogLevel)_logLevelDropdown.Selected;
 
-        foreach (var line in _log.Where(MatchesFilter))
-        {
+        // Copying should be cheaper than filtering while locked; we don't want to block the game's threads, which are
+        // indirectly calling AddLog via our LogListener
+        string[] snapshot;
+        lock (_logLock) snapshot = _log.ToArray();
+
+        foreach (var line in snapshot.Where(MatchesFilter))
             LimitedLog.RenderLine(line, minLevel, _logLabel);
-        }
 
         if (_isFollowingLog) ScrollToBottomAsync();
     }

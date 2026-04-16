@@ -23,6 +23,7 @@ public class OpenLogWindow : AbstractConsoleCmd
 
     public static void OpenWindow(bool stealFocus)
     {
+        if (!BaseLibMain.IsMainThread) throw new InvalidOperationException("OpenWindow called when not on main thread");
         var instance = NGame.Instance;
         if (instance == null) return;
 
@@ -41,9 +42,9 @@ public class OpenLogWindow : AbstractConsoleCmd
             if (!stealFocus)
                 window.GrabFocus();
         }
-        catch (Exception _)
+        catch (Exception e)
         {
-            BaseLibMain.Logger.Info("Failed to open log window: {e.ToString}");
+            BaseLibMain.Logger.Info($"Failed to open log window: {e}");
         }
     }
 }
