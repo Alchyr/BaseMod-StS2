@@ -1,0 +1,6 @@
+{
+  "COMBAT_REWARD_CARD_TRANSFORM": "Transform {cards:plural:a card|{cards} cards}",
+  "COMBAT_REWARD_CARD_TRANSFORM.selectionScreenPrompt": "Choose {Amount:plural:a card:[blue]{}[/blue] cards} to [gold]Transform[/gold]",
+  "COMBAT_REWARD_CARD_TRANSFORM_AND_UPGRADE": "Transform and Upgrade {cards:plural:a card|{cards} cards}",
+  "COMBAT_REWARD_CARD_TRANSFORM_AND_UPGRADE.selectionScreenPrompt": "Choose {Amount:plural:a card:[blue]{}[/blue] cards} to [gold]Transform[/gold] and [gold]Upgrade[/gold]",
+}
