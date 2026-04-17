@@ -1,3 +1,4 @@
+using BaseLib.Common.Rewards;
 using MegaCrit.Sts2.Core.Logging;
 using MegaCrit.Sts2.Core.Multiplayer.Game;
 using MegaCrit.Sts2.Core.Multiplayer.Serialization;
@@ -7,15 +8,36 @@ namespace BaseLib.Abstracts;
 
 /// <summary>
 /// The type to inherit from to add a custom message.
-/// Not actually necessary, just provides some helpful abstract methods as reminders/hints for setting up a message
+/// Not actually necessary to inherit from, just provides some helpful abstract methods as reminders/hints for setting up a message
 /// </summary>
 public abstract class CustomMessage : INetMessage, ICustomMessage
 {
-    public abstract void Serialize(PacketWriter writer);
-    public abstract void Deserialize(PacketReader reader);
-
+    /// <summary>
+    /// Register your message type here.
+    /// Needs to be a function that takes <c>(<see cref="ICustomMessage"/> message, <see langword="ulong"/> senderId)</c>
+    /// See <seealso cref="CardTransformRewardMessage.HandleCardTransformedMessage"/> for an example.
+    /// You probably want to use an <see href="https://learn.microsoft.com/en-us/dotnet/csharp/programming-guide/classes-and-structs/extension-methods">Extension Method</see>
+    /// </summary>
     public abstract void Initialize(INetGameService netService);
+
+    /// <summary>
+    /// Unregister your message type here<br/>
+    /// Reference the same function you registered in <see cref="Initialize(INetGameService)"/>
+    /// </summary>
     public abstract void Dispose(INetGameService netService);
+    /// <summary>
+    /// How your message is "written" to be sent over the internet
+    /// </summary>
+    /// <param name="writer">The </param>
+    /// <example>writer.</example>
+    public abstract void Serialize(PacketWriter writer);
+    /// <summary>
+    /// Read out your message into whatever variables it was created from
+    /// </summary>
+    /// <param name="reader">Parameter description.</param>
+    /// <returns>Type and description of the returned object.</returns>
+    /// <example>Write me later.</example>
+    public abstract void Deserialize(PacketReader reader);
 
     /// <summary>
     /// Whether to broadcast the message
@@ -30,4 +52,3 @@ public abstract class CustomMessage : INetMessage, ICustomMessage
     /// </summary>
     public abstract LogLevel LogLevel { get; }
 }
-

@@ -15,7 +15,7 @@ namespace BaseLib.Common.Rewards;
 /// </summary>
 public sealed class CardTransformRewardMessage : CustomRewardMessage
 {
-    private void HandleCardTransformedMessage(CardTransformRewardMessage message, ulong senderId)
+    internal void HandleCardTransformedMessage(CardTransformRewardMessage message, ulong senderId)
     {
         BaseLibMain.Logger.Debug($"Handling message {message}");
         var rs = RunManager.Instance.RewardSynchronizer;
