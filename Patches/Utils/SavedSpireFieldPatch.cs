@@ -38,16 +38,10 @@ static class SavedSpireFieldPatch
         foreach (var field in GetFieldsForModel(model))
             field.Import(model, __instance);
     }
+    
+    //TODO - Patch SerializablePlayer
+    //Allow SavedSpirefield<player> to be saved and loaded to this
 
-    internal static void CheckSavedSpireField(FieldInfo field)
-    {
-        Type fType = field.FieldType;
-                
-        if (!fType.IsGenericType || fType.GetGenericTypeDefinition() != typeof(SavedSpireField<,>))
-            return;
-
-        field.GetValue(null); //Trigger field initialization
-    }
     
     internal static void AddFieldsSorted()
     {

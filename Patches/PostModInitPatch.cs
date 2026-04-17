@@ -3,6 +3,7 @@ using BaseLib.Extensions;
 using BaseLib.Patches.Content;
 using BaseLib.Patches.Features;
 using BaseLib.Patches.Utils;
+using BaseLib.Utils;
 using HarmonyLib;
 using MegaCrit.Sts2.Core.Helpers;
 using MegaCrit.Sts2.Core.Localization;
@@ -52,7 +53,7 @@ class PostModInitPatch
 
             foreach (var field in type.GetFields(BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic))
             {
-                SavedSpireFieldPatch.CheckSavedSpireField(field);
+                CheckSpecialSpireField(field);
             }
 
             if (hasSavedProperty)
@@ -64,4 +65,19 @@ class PostModInitPatch
         SavedSpireFieldPatch.AddFieldsSorted();
     }
 
+    private static void CheckSpecialSpireField(FieldInfo field)
+    {
+        Type fType = field.FieldType;
+                
+        if (!fType.IsGenericType)
+            return;
+        
+        var genericTypeDef = fType.GetGenericTypeDefinition();
+
+        if (genericTypeDef != typeof(SavedSpireField<,>) &&
+            genericTypeDef != typeof(AddedNode<,>))
+            return;
+
+        field.GetValue(null); //Trigger field initialization
+    }
 }

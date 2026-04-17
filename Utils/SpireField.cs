@@ -1,5 +1,8 @@
 using System.Runtime.CompilerServices;
 using BaseLib.Patches.Utils;
+using Godot;
+using HarmonyLib;
+using MegaCrit.Sts2.Core.Helpers;
 using MegaCrit.Sts2.Core.Models;
 using MegaCrit.Sts2.Core.Saves.Runs;
 
@@ -42,6 +45,70 @@ public class SpireField<TKey, TVal> where TKey : class
     public void Set(TKey obj, TVal? val)
     {
         _table.AddOrUpdate(obj, val);
+    }
+}
+
+public class AddedNode<TParentType, TNode> : SpireField<TParentType, TNode> where TParentType : Node where TNode : Node
+{
+    private static List<AddedNode<TParentType, TNode>> _addedNodes = [];
+    private static bool _patched = false;
+    
+    public AddedNode(Func<TParentType, TNode> defaultVal) : base(defaultVal)
+    {
+        _addedNodes.Add(this);
+        PatchNodeReady();
+    }
+
+    public AddedNode(string scenePath, Action<TParentType, TNode>? extraSetup = null) :
+        this(parent =>
+        {
+            var scene = SceneHelper.Instantiate<TNode>(scenePath);
+            extraSetup?.Invoke(parent, scene);
+            return scene;
+        })
+    { }
+
+    private void PatchNodeReady()
+    {
+        if (_patched) return;
+        _patched = true;
+        
+        var harmony = BaseLibMain.MainHarmony;
+        var method = AccessTools.DeclaredMethod(typeof(TParentType), "_Ready", []);
+
+        if (method != null)
+        {
+            harmony.Patch(method, postfix: GetType().DeclaredMethod(nameof(UnconditionalAdd)));
+            BaseLibMain.Logger.Info($"Patched type {typeof(TParentType).Name} to add {typeof(TNode).Name}.");
+            return;
+        }
+        
+        method = AccessTools.Method(typeof(TParentType), "_Ready", []);
+
+        if (method == null)
+        {
+            BaseLibMain.Logger.Error($"Failed to patch _Ready method for type {typeof(TParentType).Name} to add node {typeof(TNode).Name}; _Ready method not found.");
+            return;
+        }
+
+        harmony.Patch(method, postfix: GetType().DeclaredMethod(nameof(ConditionalAdd)));
+        BaseLibMain.Logger.Info($"Patched type {typeof(TParentType).Name} to add {typeof(TNode).Name}.");
+    }
+
+    private static void UnconditionalAdd(TParentType __instance)
+    {
+        foreach (var add in _addedNodes)
+        {
+            var child = add.Get(__instance);
+            if (__instance.IsAncestorOf(child)) return;
+            __instance.AddChild(child);
+        }
+    }
+
+    private static void ConditionalAdd(object __instance)
+    {
+        if (__instance is not TParentType parent) return;
+        UnconditionalAdd(parent);
     }
 }
 
