@@ -14,11 +14,14 @@ internal static class CustomRewardPatches
 
     public static void RegisterCustomReward(RewardType type, SerializableCustomReward<CustomReward> serializer)
     {
-        if (!_RewardTypeSerializers.ContainsKey(type))
+        if (_RewardTypeSerializers.ContainsKey(type))
         {
-            BaseLibMain.Logger.Info($"Registering RewardType {nameof(type)}");
-            _RewardTypeSerializers.Add(type, serializer);
+            BaseLibMain.Logger.Error($"Registering multiple rewards of the same type ({type}) is not supported");
+            throw new NotSupportedException($"Registering multiple rewards of the same type ({type}) is not supported");
         }
+
+        BaseLibMain.Logger.Info($"Registering RewardType {nameof(type)}");
+        _RewardTypeSerializers.Add(type, serializer);
     }
 
     [HarmonyPatch(nameof(Reward.FromSerializable))]
