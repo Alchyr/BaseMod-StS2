@@ -63,10 +63,16 @@ public sealed class CardTransformRewardMessage : CustomRewardMessage
     /// <inheritdoc/>
     public override void Deserialize(PacketReader reader)
     {
+        Location = reader.Read<RunLocation>();
+        Amount = reader.ReadInt();
+        Upgrade = reader.ReadBool();
     }
 
     /// <inheritdoc/>
     public override void Serialize(PacketWriter writer)
     {
+        writer.Write(Location);
+        writer.WriteInt(Amount);
+        writer.WriteBool(Upgrade);
     }
 }
