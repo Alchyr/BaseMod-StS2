@@ -16,6 +16,7 @@ using MegaCrit.Sts2.Core.Multiplayer.Game.Lobby;
 using MegaCrit.Sts2.Core.Nodes.RestSite;
 using MegaCrit.Sts2.Core.Nodes.Screens.CharacterSelect;
 using MegaCrit.Sts2.Core.Nodes.Screens.Shops;
+using MegaCrit.Sts2.Core.Models.Relics;
 
 namespace BaseLib.Abstracts;
 
@@ -80,6 +81,7 @@ public abstract class CustomCharacterModel : CharacterModel, ICustomModel, ILoca
     public virtual string? CustomArmPaperTexturePath => null;
     public virtual string? CustomArmScissorsTexturePath => null;
 //    public virtual string? CustomCookieTexturePath => null;
+    public virtual YummyCookieData? CustomYummyCookie => null;
 
     /// <summary>
     /// Override this or place your scene at res://scenes/screens/char_select/char_select_bg_class_name.tscn
@@ -701,5 +703,44 @@ class DeathSfx
 
         __result = customChar.CustomDeathSfx;
         return __result == null;
+    }
+}
+
+public record YummyCookieData(string? BigIconPath, string? PackedIconPath, string? PackedIconOutlinePath);
+
+[HarmonyPatch]
+public class CustomYummyCookiePathPatches
+{
+    [HarmonyPatch(typeof(RelicModel), nameof(RelicModel.PackedIconPath), MethodType.Getter)]
+    [HarmonyPrefix]
+    static bool PackedIconPath(RelicModel __instance, ref string __result)
+    {
+        return TryGetCustomPath(__instance, y => y.PackedIconPath, ref __result);
+    }
+
+    [HarmonyPatch(typeof(RelicModel), "PackedIconOutlinePath", MethodType.Getter)]
+    [HarmonyPrefix]
+    static bool PackedIconOutlinePath(RelicModel __instance, ref string __result)
+    {
+        return TryGetCustomPath(__instance, y => y.PackedIconOutlinePath, ref __result);
+    }
+    
+    [HarmonyPatch(typeof(RelicModel), "BigIconPath", MethodType.Getter)]
+    [HarmonyPrefix]
+    static bool BigIconPath(RelicModel __instance, ref string __result)
+    {
+        return TryGetCustomPath(__instance, y => y.BigIconPath, ref __result);
+    }
+
+    static bool TryGetCustomPath(RelicModel instance, Func<YummyCookieData, string?> selector, ref string result)
+    {
+        if (instance is not YummyCookie cookie || 
+            cookie.IsCanonical ||
+            cookie.Owner.Character is not CustomCharacterModel { CustomYummyCookie: { } yummy }
+           ) return true;
+        var path = selector(yummy);
+        if (path is null) return true;
+        result = path;
+        return false;
     }
 }
