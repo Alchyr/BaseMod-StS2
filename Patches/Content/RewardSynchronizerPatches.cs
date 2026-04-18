@@ -1,5 +1,6 @@
 using BaseLib.Abstracts;
 using BaseLib.Common.Rewards;
+using BaseLib.Extensions;
 using HarmonyLib;
 using MegaCrit.Sts2.Core.CardSelection;
 using MegaCrit.Sts2.Core.Combat;
@@ -97,7 +98,12 @@ public static class RewardSynchronizerExtensions
     /// </summary>
     public static async Task<bool> DoCardTransform(this RewardSynchronizer rewardSynchronizer, Player player, int amount = 1, bool upgrade = false)
     {
-        CardSelectorPrefs prefs = new CardSelectorPrefs(new LocString("gameplay_ui", "COMBAT_REWARD_CARD_TRANSFORM"), amount)
+        CardSelectorPrefs prefs = new CardSelectorPrefs(
+                upgrade
+                    ? CardSelectorPrefsExtensions.TransformAndUpgradeSelectionPrompt
+                    : CardSelectorPrefs.TransformSelectionPrompt,
+                1,
+                amount)
         {
             Cancelable = true,
             RequireManualConfirmation = true
@@ -108,7 +114,10 @@ public static class RewardSynchronizerExtensions
         BaseLibMain.Logger.Debug($"Current combat state for transform rewards is: IsEnding={CombatManager.Instance.IsEnding}");
         foreach (CardModel card in cards)
         {
-            CardModel newCard = CardFactory.CreateRandomCardForTransform(card, isInCombat: false, player.RunState.Rng.Niche);
+            CardModel newCard = CardFactory.CreateRandomCardForTransform(
+                    card,
+                    isInCombat: false,
+                    player.RunState.Rng.Niche);
 
             if (upgrade || card.IsUpgraded) // need a more robust handler for multi-upgrade at some point
             {
