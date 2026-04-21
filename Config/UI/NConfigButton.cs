@@ -24,7 +24,7 @@ public partial class NConfigButton : NSettingsButton
         {
             Name = "Image",
             CustomMinimumSize = new Vector2(64, 64),
-            Texture = PreloadManager.Cache.GetAsset<Texture2D>("res://BaseLib/images/configbutton.png"),
+            Texture = PreloadManager.Cache.GetAsset<Texture2D>("res://BaseLib/images/config/configbutton.png"),
             ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize,
             StretchMode = TextureRect.StretchModeEnum.Scale
         };

@@ -44,6 +44,7 @@ public partial class NModConfigSubmenu : NSubmenu
     private const float ModListWidth = 360f;
 
     private const float MaxRightSideWidth = 1200f; // Dynamically sized, but not above this (hurts UW readability)
+    private const int ModConfigPadding = 16; // Padding between the clipper and the mod config content
 
     // Read when the screen is shown *and* after a modal (e.g. confirm Restore Defaults). Ensure we return
     // to the same side that was active prior.
@@ -72,7 +73,6 @@ public partial class NModConfigSubmenu : NSubmenu
             MouseFilter = MouseFilterEnum.Ignore,
         };
         _contentPanel.SetAnchorsPreset(LayoutPreset.TopLeft);
-        _contentPanel.CustomMinimumSize = new Vector2(MaxRightSideWidth, 0);
         AddChild(_rightScrollArea);
 
         _modListTitle = CreateTitleControl("ModListTitle", "[center]Mods[/center]", 0f);
@@ -169,7 +169,8 @@ public partial class NModConfigSubmenu : NSubmenu
 
     private void ModButtonClicked(NModListButton button, ModConfig modConfig)
     {
-        LoadModConfig(modConfig);
+        if (modConfig != _currentConfig)
+            LoadModConfig(modConfig);
 
         if (!_isUsingController || _modLoadFailed) return;
 
@@ -214,6 +215,7 @@ public partial class NModConfigSubmenu : NSubmenu
     private void InputTypeChanged()
     {
         _isUsingController = NControllerManager.Instance?.IsUsingController ?? false;
+        SetBackButtonVisible(true);
         FocusActiveModButton();
     }
 
@@ -396,20 +398,18 @@ public partial class NModConfigSubmenu : NSubmenu
 
         // The rest of this method handles the right side spacing. It's complex, but behaves well with any aspect ratio.
 
-        const float minLeftGap = 24f;
-        const float minRightGap = 32f;
+        const float minimumGap = 32f;
         const float modListEnd = ModListPosition + ModListWidth;
         const float scrollbarGutter = 60f; // Space reserved for the scrollbar
-        const float sliderClippingFix = 8f; // Sliders can draw slightly out of bounds and clip when maxed out
+        const float TotalPaddingWidth = ModConfigPadding * 2f;
+        const float maxSettingsWidth = MaxRightSideWidth - scrollbarGutter - TotalPaddingWidth;
 
         var totalAvailableSpace = screenWidth - modListEnd;
-
-        var maxSettingsWidth = MaxRightSideWidth - scrollbarGutter - sliderClippingFix;
-        var spaceForSettings = totalAvailableSpace - minLeftGap - minRightGap - scrollbarGutter - sliderClippingFix;
+        var spaceForSettings = totalAvailableSpace - 2 * minimumGap - scrollbarGutter - TotalPaddingWidth;
         var actualSettingsWidth = Mathf.Min(spaceForSettings, maxSettingsWidth);
 
-        var leftoverSpace = totalAvailableSpace - actualSettingsWidth - scrollbarGutter - sliderClippingFix;
-        var unallocatedSpace = leftoverSpace - minLeftGap - minRightGap;
+        var leftoverSpace = totalAvailableSpace - actualSettingsWidth - scrollbarGutter - TotalPaddingWidth;
+        var unallocatedSpace = leftoverSpace - 2 * minimumGap;
 
         var extraScrollbarSpacing = 0f;
         var centeringOffset = 0f;
@@ -424,20 +424,26 @@ public partial class NModConfigSubmenu : NSubmenu
             centeringOffset = unallocatedSpace / 2f;
         }
 
-        var contentPosition = modListEnd + minLeftGap + centeringOffset;
-        var containerWidth = actualSettingsWidth + extraScrollbarSpacing + scrollbarGutter + sliderClippingFix;
+        var contentPosition = modListEnd + minimumGap + centeringOffset;
+        var containerWidth = actualSettingsWidth + TotalPaddingWidth + extraScrollbarSpacing + scrollbarGutter;
+        var containerPosition = contentPosition - ModConfigPadding;
 
-        // Position and size the content area
-        _rightScrollArea.Position = new Vector2(contentPosition, 0);
+        // Position and size the scroll area
+        _rightScrollArea.Position = new Vector2(containerPosition, 0);
         _rightScrollArea.Size = new Vector2(containerWidth, screenHeight);
 
-        // Emulate the game and add extra space at the bottom if scrolling is (almost, due to the 30f padding) needed
-        var clipperSize = _contentPanel.GetParent<Control>().Size;
+        // Offset the VBox by the padding amount instead of using a MarginContainer, which complicates things with its
+        // strict auto-layout rules
+        _optionContainer.Position = new Vector2(ModConfigPadding, 0);
         _optionContainer.CustomMinimumSize = new Vector2(actualSettingsWidth, 0);
         _optionContainer.Size = new Vector2(actualSettingsWidth, 0);
+
         var requiredHeight = _optionContainer.GetMinimumSize().Y;
+
         var paddedHeight = requiredHeight + 30f;
 
+        // Emulate the game and add extra space at the bottom
+        var clipperSize = _contentPanel.GetParent<Control>().Size;
         if (paddedHeight >= clipperSize.Y)
             paddedHeight += clipperSize.Y * 0.3f;
 
@@ -446,7 +452,6 @@ public partial class NModConfigSubmenu : NSubmenu
         _contentPanel.CustomMinimumSize = new Vector2(rightContentWidth, paddedHeight);
         _contentPanel.Size = new Vector2(rightContentWidth, paddedHeight);
 
-        _optionContainer.CustomMinimumSize = new Vector2(actualSettingsWidth, 0);
         _optionContainer.Size = new Vector2(actualSettingsWidth, requiredHeight);
 
         // Force center the mod title over the actual settings
@@ -454,6 +459,7 @@ public partial class NModConfigSubmenu : NSubmenu
         _modTitle.OffsetRight = contentPosition + actualSettingsWidth;
         _modTitle.CustomMinimumSize = new Vector2(actualSettingsWidth, ModTitleHeight);
     }
+
     protected override void OnSubmenuShown()
     {
         base.OnSubmenuShown();

@@ -15,7 +15,7 @@ public static class NodeExtensions
     public static Control? FindFirstFocusable(this Node? node)
     {
         if (node == null) return null;
-        if (node is Control { FocusMode: Control.FocusModeEnum.All or Control.FocusModeEnum.Click } control)
+        if (node is Control { FocusMode: Control.FocusModeEnum.All } control)
             return control;
 
         return node

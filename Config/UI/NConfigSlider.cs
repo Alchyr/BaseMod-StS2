@@ -128,7 +128,7 @@ public partial class NConfigSlider : Control
         _sliderLabel.ClipContents = false;
 
         _selectionReticle.AnchorRight = 1f;
-        _selectionReticle.OffsetRight = 10f;
+        _selectionReticle.OffsetRight = 20f;
 
         SetFromProperty();
         _slider.Connect(Godot.Range.SignalName.ValueChanged, Callable.From<double>(OnValueChanged));

@@ -1,16 +1,15 @@
 ﻿using System.Reflection;
 using Godot;
-using MegaCrit.Sts2.Core.Assets;
-using MegaCrit.Sts2.Core.Helpers;
 using MegaCrit.Sts2.Core.Nodes.Combat;
 using MegaCrit.Sts2.Core.Nodes.CommonUi;
 
 namespace BaseLib.Config.UI;
 
-public partial class NConfigColorPicker : CenterContainer
+public partial class NConfigColorPicker : CenterContainer, ISelectionReticle
 {
     public static readonly Type[] SupportedTypes = [typeof(Color), typeof(string)];
-    private NSelectionReticle _selectionReticle;
+
+    public NSelectionReticle? Reticle { get; set; }
     private ColorPickerButton _button;
     private ColorPicker _picker;
     private Popup _popup;
@@ -43,14 +42,9 @@ public partial class NConfigColorPicker : CenterContainer
         _picker = _button.GetPicker();
         _popup = _button.GetPopup();
 
-        var reticleScene = PreloadManager.Cache.GetScene(SceneHelper.GetScenePath("ui/selection_reticle"));
-        _selectionReticle = reticleScene.Instantiate<NSelectionReticle>();
-        _selectionReticle.Name = "SelectionReticle";
-        _selectionReticle.SetAnchorsAndOffsetsPreset(LayoutPreset.FullRect, margin: -12);
-        _button.AddChild(_selectionReticle);
-
-        _button.Connect(Godot.Control.SignalName.FocusEntered, Callable.From(OnFocus));
-        _button.Connect(Godot.Control.SignalName.FocusExited, Callable.From(OnUnfocus));
+        ((ISelectionReticle)this).SetupSelectionReticle(_button);
+        FocusEntered += OnFocus;
+        FocusExited += OnUnfocus;
 
         var style = new StyleBoxFlat
         {
@@ -139,13 +133,11 @@ public partial class NConfigColorPicker : CenterContainer
     private void OnFocus()
     {
         if (NControllerManager.Instance?.IsUsingController != true) return;
-        _selectionReticle.OnSelect();
         OnHover();
     }
 
     private void OnUnfocus()
     {
-        _selectionReticle.OnDeselect();
         OnUnhover();
     }
 
