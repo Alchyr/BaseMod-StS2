@@ -44,10 +44,7 @@ internal sealed class NCustomCharacterSelectEntryButton : ICharacterSelectButton
         Button.SetMeta("BaseLibCustomCharacterSelectEntry", entry.EntryId);
 
         DelegateField?.SetValue(Button, this);
-        CharacterField?.SetValue(Button, TemplateCharacter);
-        LockedField?.SetValue(Button, false);
-
-        ApplyVisuals();
+        UpdateInteractionState();
     }
 
     /// <summary>
@@ -64,12 +61,22 @@ internal sealed class NCustomCharacterSelectEntryButton : ICharacterSelectButton
     public StartRunLobby Lobby => _screen.Lobby;
 
     /// <summary>
+    /// Whether this entry is currently locked.
+    /// </summary>
+    public bool IsLocked => Button.IsLocked;
+
+    /// <summary>
+    /// The character whose vanilla lock semantics are reused by this entry, if any.
+    /// </summary>
+    public CharacterModel? LockSourceCharacter => Entry.AvailabilitySourceCharacter;
+
+    /// <summary>
     /// Enables the underlying button.
     /// </summary>
     public void Enable()
     {
         Button.Enable();
-        ApplyVisuals();
+        UpdateInteractionState();
     }
 
     /// <summary>
@@ -122,8 +129,15 @@ internal sealed class NCustomCharacterSelectEntryButton : ICharacterSelectButton
         var lockIcon = Button.GetNodeOrNull<TextureRect>("%Lock");
         if (lockIcon != null)
         {
-            lockIcon.Visible = false;
+            lockIcon.Visible = IsLocked;
         }
+    }
+
+    private void UpdateInteractionState()
+    {
+        CharacterField?.SetValue(Button, LockSourceCharacter ?? TemplateCharacter);
+        LockedField?.SetValue(Button, !Entry.UnlockedInCharacterSelect);
+        ApplyVisuals();
     }
 
     private sealed class PlaceholderCharacter : CustomCharacterModel

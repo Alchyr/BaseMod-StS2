@@ -132,28 +132,6 @@ internal static class CustomCharacterSelectEntryPatch
 
     private static void SelectCustomEntry(NCharacterSelectScreen screen, NCustomCharacterSelectEntryButton button)
     {
-        Control entryScene;
-        try
-        {
-            entryScene = button.Entry.CreateCharacterSelectScene();
-        }
-        catch (Exception e)
-        {
-            BaseLibMain.Logger.Error($"Failed to create custom character select scene for {button.Entry.EntryId}: {e}");
-            button.Deselect();
-            return;
-        }
-
-        Control? foregroundScene = null;
-        try
-        {
-            foregroundScene = button.Entry.CreateCharacterSelectForegroundScene();
-        }
-        catch (Exception e)
-        {
-            BaseLibMain.Logger.Error($"Failed to create custom character select foreground scene for {button.Entry.EntryId}: {e}");
-        }
-
         var state = ScreenStates.Get(screen)!;
         var customButtons = state.Buttons.Select(static customButton => customButton.Button).ToHashSet();
 
@@ -175,6 +153,35 @@ internal static class CustomCharacterSelectEntryPatch
 
         ClearBackground(screen);
         ClearActiveEntry(screen, clearScene: true);
+
+        if (button.IsLocked)
+        {
+            state.ActiveButton = button;
+            ApplyLockedEntryPanel(screen, button);
+            return;
+        }
+
+        Control entryScene;
+        try
+        {
+            entryScene = button.Entry.CreateCharacterSelectScene();
+        }
+        catch (Exception e)
+        {
+            BaseLibMain.Logger.Error($"Failed to create custom character select scene for {button.Entry.EntryId}: {e}");
+            button.Deselect();
+            return;
+        }
+
+        Control? foregroundScene = null;
+        try
+        {
+            foregroundScene = button.Entry.CreateCharacterSelectForegroundScene();
+        }
+        catch (Exception e)
+        {
+            BaseLibMain.Logger.Error($"Failed to create custom character select foreground scene for {button.Entry.EntryId}: {e}");
+        }
 
         entryScene.Name = $"{button.Entry.EntryId}_entry_bg";
         screen._bgContainer.AddChildSafely(entryScene);
@@ -382,6 +389,31 @@ internal static class CustomCharacterSelectEntryPatch
         screen._relicDescription.Text = string.Empty;
         screen._ascensionPanel.Visible = false;
         ApplyInfoPanelVisibility(screen, entry.ShowVanillaInfoPanelWhenUnresolved);
+    }
+
+    private static void ApplyLockedEntryPanel(NCharacterSelectScreen screen, NCustomCharacterSelectEntryButton button)
+    {
+        if (button.LockSourceCharacter != null)
+        {
+            ApplyLockedCharacterPanel(
+                screen,
+                button.LockSourceCharacter,
+                button.Entry.ShowVanillaInfoPanelWhenUnresolved);
+            return;
+        }
+
+        screen._selectedButton = null;
+        screen._embarkButton.Disable();
+        screen._name.SetTextAutoSize(button.Entry.LockedTitle);
+        screen._description.Text = button.Entry.LockedDescription;
+        screen._hp.SetTextAutoSize("??/??");
+        screen._gold.SetTextAutoSize("???");
+        screen._relicIcon.SelfModulate = StsColors.transparentBlack;
+        screen._relicIconOutline.SelfModulate = StsColors.transparentBlack;
+        screen._relicTitle.Text = string.Empty;
+        screen._relicDescription.Text = string.Empty;
+        screen._ascensionPanel.Visible = false;
+        ApplyInfoPanelVisibility(screen, button.Entry.ShowVanillaInfoPanelWhenUnresolved);
     }
 
     private static void ApplyCharacterPanel(

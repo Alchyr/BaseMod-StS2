@@ -1,9 +1,11 @@
 using BaseLib.Patches.Content;
 using Godot;
 using MegaCrit.Sts2.Core.Helpers;
+using MegaCrit.Sts2.Core.Localization;
 using MegaCrit.Sts2.Core.Models;
 using MegaCrit.Sts2.Core.Multiplayer.Game.Lobby;
 using MegaCrit.Sts2.Core.Nodes.Screens.CharacterSelect;
+using MegaCrit.Sts2.Core.Saves;
 
 namespace BaseLib.Abstracts;
 
@@ -51,6 +53,18 @@ public abstract class CustomCharacterSelectEntry : ICustomModel
     public virtual bool VisibleInCharacterSelect => true;
 
     /// <summary>
+    /// Optional character whose vanilla unlock state and lock tooltip semantics should be reused by this entry.
+    /// </summary>
+    public virtual CharacterModel? AvailabilitySourceCharacter => null;
+
+    /// <summary>
+    /// Controls whether this entry is currently unlocked and can be selected.
+    /// Defaults to the unlock state of <seealso cref="AvailabilitySourceCharacter"/> when one is provided.
+    /// </summary>
+    public virtual bool UnlockedInCharacterSelect =>
+        AvailabilitySourceCharacter == null || CustomCharacterSelectEntryAvailability.IsUnlocked(AvailabilitySourceCharacter);
+
+    /// <summary>
     /// Optional default resolved character when the entry is selected.
     /// </summary>
     public virtual CharacterModel? InitialCharacter => null;
@@ -64,6 +78,17 @@ public abstract class CustomCharacterSelectEntry : ICustomModel
     /// Controls whether the vanilla info panel should be shown after this entry resolves to a concrete character.
     /// </summary>
     public virtual bool ShowVanillaInfoPanelWhenResolved => true;
+
+    /// <summary>
+    /// Title shown in the vanilla info panel when this entry is visible but locked and no source character lock panel is used.
+    /// </summary>
+    public virtual string LockedTitle =>
+        new LocString("main_menu_ui", "CHARACTER_SELECT.locked.title").GetFormattedText();
+
+    /// <summary>
+    /// Description shown in the vanilla info panel when this entry is visible but locked and no source character lock panel is used.
+    /// </summary>
+    public virtual string LockedDescription => EntryDescription;
 
     /// <summary>
     /// Override this or <seealso cref="CreateCharacterSelectScene"/> to provide a scene shown in the background container.
@@ -225,5 +250,14 @@ internal static class CustomCharacterSelectEntryRegistry
             var result = a.SortOrder.CompareTo(b.SortOrder);
             return result != 0 ? result : string.CompareOrdinal(a.EntryId, b.EntryId);
         });
+    }
+}
+
+internal static class CustomCharacterSelectEntryAvailability
+{
+    public static bool IsUnlocked(CharacterModel character)
+    {
+        var unlockState = SaveManager.Instance.GenerateUnlockStateFromProgress();
+        return unlockState.Characters.Contains(character);
     }
 }
