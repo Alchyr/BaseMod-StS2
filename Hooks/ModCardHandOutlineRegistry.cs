@@ -31,16 +31,16 @@ public static class ModCardHandOutlineRegistry
     }
 
     /// <summary>
-    ///     Registers a rule for <paramref name="cardType" /> (concrete <see cref="CardModel" /> subtype).
+    ///     Registers a rule for <paramref name="cardType" /> (<see cref="CardModel" /> subtype).
     /// </summary>
     public static void Register(Type cardType, ModCardHandOutlineRule rule)
     {
         ArgumentNullException.ThrowIfNull(cardType);
         ArgumentNullException.ThrowIfNull(rule.When);
 
-        if (cardType.IsAbstract || !typeof(CardModel).IsAssignableFrom(cardType))
+        if (!typeof(CardModel).IsAssignableFrom(cardType))
             throw new ArgumentException(
-                $"Type '{cardType.FullName}' must be a concrete subtype of {typeof(CardModel).FullName}.",
+                $"Type '{cardType.FullName}' must be a subtype of {typeof(CardModel).FullName}.",
                 nameof(cardType));
 
         var seq = Interlocked.Increment(ref _sequence);
