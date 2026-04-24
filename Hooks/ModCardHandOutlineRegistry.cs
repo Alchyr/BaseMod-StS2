@@ -20,6 +20,7 @@ public static class ModCardHandOutlineRegistry
     private static readonly ConcurrentDictionary<Type, List<RegisteredRule>> RulesByCardType = new();
     private static readonly Lock ForeignLock = new();
     private static readonly List<ForeignProvider> ForeignProviders = [];
+    private static readonly List<ForeignDynamicProvider> ForeignDynamicProviders = [];
 
     /// <summary>
     ///     Registers a rule for <typeparamref name="TCard" />.
@@ -75,6 +76,23 @@ public static class ModCardHandOutlineRegistry
     }
 
     /// <summary>
+    ///     Merges dynamic outline evaluation from another assembly. The delegate returns current paint resolver and metadata.
+    /// </summary>
+    public static void RegisterForeignDynamic(string modId, string sourceId,
+        Func<CardModel, (Func<Color> ResolveColor, int Priority, bool VisibleWhenUnplayable)?> evaluateBestFromForeign)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(modId);
+        ArgumentException.ThrowIfNullOrWhiteSpace(sourceId);
+        ArgumentNullException.ThrowIfNull(evaluateBestFromForeign);
+
+        var order = Interlocked.Increment(ref _foreignOrder);
+        lock (ForeignLock)
+        {
+            ForeignDynamicProviders.Add(new ForeignDynamicProvider(evaluateBestFromForeign, order));
+        }
+    }
+
+    /// <summary>
     ///     Clears all rules and foreign providers (tests / tooling).
     /// </summary>
     public static void ClearForTests()
@@ -83,6 +101,7 @@ public static class ModCardHandOutlineRegistry
         lock (ForeignLock)
         {
             ForeignProviders.Clear();
+            ForeignDynamicProviders.Clear();
         }
     }
 
@@ -153,6 +172,41 @@ public static class ModCardHandOutlineRegistry
                 foreignBest = new ForeignCandidate(candidate, provider.Order);
         }
 
+        List<ForeignDynamicProvider> dynamicSnapshot;
+        lock (ForeignLock)
+        {
+            dynamicSnapshot = [..ForeignDynamicProviders];
+        }
+
+        foreach (var provider in dynamicSnapshot)
+        {
+            (Func<Color> ResolveColor, int Priority, bool VisibleWhenUnplayable)? foreignPaint;
+            try
+            {
+                foreignPaint = provider.Evaluate(model);
+            }
+            catch
+            {
+                continue;
+            }
+
+            if (foreignPaint is not { } paint || paint.ResolveColor == null)
+                continue;
+
+            var candidate = new ModCardHandOutlineRule(
+                ForeignPredicateAlreadySatisfied,
+                paint.ResolveColor(),
+                paint.Priority,
+                paint.VisibleWhenUnplayable)
+            {
+                DynamicColor = _ => paint.ResolveColor(),
+            };
+
+            if (foreignBest is null ||
+                RuleWins(candidate, provider.Order, foreignBest.Value.Rule, foreignBest.Value.Order))
+                foreignBest = new ForeignCandidate(candidate, provider.Order);
+        }
+
         switch (local)
         {
             case null when foreignBest is null:
@@ -204,6 +258,10 @@ public static class ModCardHandOutlineRegistry
 
     private readonly record struct ForeignProvider(
         Func<CardModel, (Color Color, int Priority, bool VisibleWhenUnplayable)?> Evaluate,
+        int Order);
+
+    private readonly record struct ForeignDynamicProvider(
+        Func<CardModel, (Func<Color> ResolveColor, int Priority, bool VisibleWhenUnplayable)?> Evaluate,
         int Order);
 
     private readonly record struct ForeignCandidate(ModCardHandOutlineRule Rule, int Order);
