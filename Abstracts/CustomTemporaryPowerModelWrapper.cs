@@ -14,15 +14,15 @@ namespace BaseLib.Abstracts;
 /// <typeparam name="TPower">The power that will be applied to the target</typeparam>
 public abstract class CustomTemporaryPowerModelWrapper<TModel, TPower> : CustomTemporaryPowerModel  where TModel : AbstractModel where TPower : PowerModel
 {
-    public override string CustomBigBetaIconPath => (Amount >= 0 ? "BaseLib/images/powers/big/baselib-power_temp_up.png" : "BaseLib/images/powers/big/baselib-power_temp_down.png");
+    public override string CustomBigBetaIconPath => (Amount >= 0 == !InvertInternalPowerAmount ? "BaseLib/images/powers/big/baselib-power_temp_up.png" : "BaseLib/images/powers/big/baselib-power_temp_down.png");
     /// <summary>
     /// Placeholder small icon; you are recommended to override this.
     /// </summary>
-    public override string CustomPackedIconPath => (Amount >= 0 ? "BaseLib/images/powers/baselib-power_temp_up.png" : "BaseLib/images/powers/baselib-power_temp_down.png");
+    public override string CustomPackedIconPath => (Amount >= 0 == !InvertInternalPowerAmount ? "BaseLib/images/powers/baselib-power_temp_up.png" : "BaseLib/images/powers/baselib-power_temp_down.png");
     /// <summary>
     /// Placeholder large icon; you are recommended to override this.
     /// </summary>
-    public override string CustomBigIconPath => (Amount >= 0 ? "BaseLib/images/powers/big/baselib-power_temp_up_big.png" : "BaseLib/images/powers/big/baselib-power_temp_down_big.png");
+    public override string CustomBigIconPath => (Amount >= 0 == !InvertInternalPowerAmount ? "BaseLib/images/powers/big/baselib-power_temp_up_big.png" : "BaseLib/images/powers/big/baselib-power_temp_down_big.png");
 
     public override AbstractModel OriginModel => ModelDb.GetById<AbstractModel>(ModelDb.GetId<TModel>());
     public override PowerModel InternallyAppliedPower => ModelDb.Power<TPower>();
@@ -33,10 +33,7 @@ public abstract class CustomTemporaryPowerModelWrapper<TModel, TPower> : CustomT
             return BetaMainCompatibility.PowerCmd_.Apply.
                 InvokeGeneric<Task<TPower?>, TPower>(null, context, target, amt, src, srcCard, silent) ?? Task.CompletedTask;
         };
-        
     
-    
-
     
     public override LocString Title
     {
@@ -58,6 +55,8 @@ public abstract class CustomTemporaryPowerModelWrapper<TModel, TPower> : CustomT
                     return characterModel.Title;
                 case MonsterModel monsterModel:
                     return monsterModel.Title;
+                case ActModel actModel:
+                    return actModel.Title;
                 default:
                     BaseLibMain.Logger.Warn($"Getting the 'Title' for the base model type of '{OriginModel.GetType().Name}' has not been implemented yet. Using default title.");
                     return new LocString("powers",  "BASELIB-CUSTOM_TEMPORARY_POWER_MODEL.title");
@@ -84,6 +83,9 @@ public abstract class CustomTemporaryPowerModelWrapper<TModel, TPower> : CustomT
                 case PowerModel power:
                     items = [HoverTipFactory.FromPower(power)];
                     break;
+                case ActModel:
+                    items = [];
+                    break;
                 default:
                     BaseLibMain.Logger.Warn($"Getting the Hover Tips for the base model type of '{OriginModel.GetType().Name}' has not been implemented yet.");
                     items = [];
@@ -94,8 +96,8 @@ public abstract class CustomTemporaryPowerModelWrapper<TModel, TPower> : CustomT
         }
     }
 
-    public override LocString Description => new LocString("powers", Amount > 0 ? "BASELIB-CUSTOM_TEMPORARY_POWER_MODEL.UP.description" : "BASELIB-CUSTOM_TEMPORARY_POWER_MODEL.DOWN.description");
+    public override LocString Description => new LocString("powers", Amount > 0 == !InvertInternalPowerAmount ? "BASELIB-CUSTOM_TEMPORARY_POWER_MODEL.UP.description" : "BASELIB-CUSTOM_TEMPORARY_POWER_MODEL.DOWN.description");
     
-    protected override string SmartDescriptionLocKey => Amount > 0 ? "BASELIB-CUSTOM_TEMPORARY_POWER_MODEL.UP.smartDescription" : "BASELIB-CUSTOM_TEMPORARY_POWER_MODEL.DOWN.smartDescription";
+    protected override string SmartDescriptionLocKey => Amount > 0 == !InvertInternalPowerAmount ? "BASELIB-CUSTOM_TEMPORARY_POWER_MODEL.UP.smartDescription" : "BASELIB-CUSTOM_TEMPORARY_POWER_MODEL.DOWN.smartDescription";
 
 }

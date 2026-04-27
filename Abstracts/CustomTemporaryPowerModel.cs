@@ -32,7 +32,7 @@ public abstract class CustomTemporaryPowerModel : CustomPowerModel, ITemporaryPo
     public override PowerStackType StackType => PowerStackType.Counter;
     public override bool AllowNegative => true;
     public override bool IsInstanced => LastForXExtraTurns != 0;
-    
+    protected virtual bool InvertInternalPowerAmount => false;
     
     // The whole IgnoreNextInstance thing ONLY exists because of the Misery card
     // Check Misery.DoHackyThingsForSpecificPowers() for usage
@@ -59,7 +59,7 @@ public abstract class CustomTemporaryPowerModel : CustomPowerModel, ITemporaryPo
         {
             DynamicVars.Repeat.BaseValue = LastForXExtraTurns;
             DynamicVars[LocTurnEndBoolVar].BaseValue = Convert.ToDecimal(UntilEndOfOtherSideTurn);
-            await ApplyPowerFunc(new ThrowingPlayerChoiceContext(), target, amount, applier, cardSource, true);
+            await ApplyPowerFunc(new ThrowingPlayerChoiceContext(), target, InvertInternalPowerAmount ? -amount : amount, applier, cardSource, true);
         }
     }
 
@@ -74,7 +74,7 @@ public abstract class CustomTemporaryPowerModel : CustomPowerModel, ITemporaryPo
         if (powerSource._shouldIgnoreNextInstance)
             powerSource._shouldIgnoreNextInstance = false;
         else
-            await ApplyPowerFunc(context, powerSource.Owner, amount, applier, cardSource, true);
+            await ApplyPowerFunc(context, powerSource.Owner, InvertInternalPowerAmount ? -amount : amount, applier, cardSource, true);
     }
 
 
@@ -95,7 +95,7 @@ public abstract class CustomTemporaryPowerModel : CustomPowerModel, ITemporaryPo
         }
 
         powerSource.Flash();
-        await ApplyPowerFunc(choiceContext, powerSource.Owner, -powerSource.Amount, powerSource.Owner, null, true);
+        await ApplyPowerFunc(choiceContext, powerSource.Owner, InvertInternalPowerAmount ? powerSource.Amount : -powerSource.Amount, powerSource.Owner, null, true);
         await PowerCmd.Remove(powerSource);
     }
 
