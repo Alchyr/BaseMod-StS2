@@ -368,6 +368,28 @@ public class InstructionPatcher(IEnumerable<CodeInstruction> instructions)
         return this;
     }
 
+    /// <summary>
+    /// Inserts a sequence of CodeInstructions before the current match.
+    /// </summary>
+    /// <param name="insert"></param>
+    /// <returns></returns>
+    /// <exception cref="Exception"></exception>
+    public InstructionPatcher InsertBeforeMatch(IEnumerable<CodeInstruction> insert)
+    {
+        if (_index < 0 || _lastMatchStart < 0) throw new Exception("Attempted to Insert without any match found");
+
+        _index = _lastMatchStart;
+        _lastMatchStart = -1;
+
+        var codeInstructions = insert as CodeInstruction[] ?? insert.ToArray();
+        _code.InsertRange(_index, codeInstructions);
+        _index += codeInstructions.Length;
+        
+        Log.Add($"Inserted {codeInstructions.Length} instructions, new index {_index}");
+
+        return this;
+    }
+
     public InstructionPatcher CopyMatch(out List<CodeInstruction> match)
     {
         if (_index < 0) throw new Exception("Attempted to CopyMatch without any match found");

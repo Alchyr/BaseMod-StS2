@@ -513,8 +513,12 @@ public class InstructionMatcher() : IMatcher
         return this;
     }
     /*Cpobj = 0x70,
-    Ldobj = 0x71,
-    Ldstr = 0x72,*/
+    Ldobj = 0x71,*/
+    public InstructionMatcher ldstr(string? s = null) //0x72
+    {
+        _target.Add(new(OpCodes.Ldstr, s));
+        return this;
+    }
     public InstructionMatcher newobj(ConstructorInfo? constructor) //0x73
     {
         _target.Add(new(OpCodes.Newobj, constructor));
