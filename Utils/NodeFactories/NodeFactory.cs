@@ -8,7 +8,7 @@ namespace BaseLib.Utils.NodeFactories;
 /// <summary>
 /// Factory for producing instances of scene scripts that are normally inaccessible in Godot editor when modding.
 /// Will convert a given scene and nodes within the scene into valid types for target scene if it is possible to do so.
-/// Should reference NodeFactory<T>.CreateFromScene
+/// Should reference NodeFactory&lt;T&gt;.CreateFromScene.
 /// </summary>
 public abstract class NodeFactory
 {
