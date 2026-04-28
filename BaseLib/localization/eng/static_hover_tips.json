@@ -4,5 +4,7 @@
   "BASELIB-EXHAUSTIVE.title": "Exhaustive",
   "BASELIB-EXHAUSTIVE.description": "This card [gold]Exhausts[/gold] after {Exhaustive:cond:>1?[blue]{Exhaustive}[/blue] |}{Exhaustive:plural:use|uses}.",
   "BASELIB-REFUND.title": "Refund",
-  "BASELIB-REFUND.description": "When energy is spent on this card, up to [blue]{Refund}[/blue] of that energy is refunded."
+  "BASELIB-REFUND.description": "When energy is spent on this card, up to [blue]{Refund}[/blue] of that energy is refunded.",
+  "BASELIB-VITALITY.title": "Vitality",
+  "BASELIB-VITALITY.description": "Until the end of combat, prevents HP loss."
 }
