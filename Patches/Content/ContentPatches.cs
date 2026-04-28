@@ -356,26 +356,30 @@ public static class AddActContent
 
     static IEnumerable<EncounterModel> AddCustomEncounters(IEnumerable<EncounterModel> result, ActModel __instance)
     {
-        foreach (var value in result)
+        List<EncounterModel> origResult = result.ToList();
+        foreach (var value in origResult)
         {
             yield return value;
         }
 
         foreach (var encounter in CustomContentDictionary.CustomEncounters)
         {
+            if (origResult.Any(existingEncounter => existingEncounter.Id.Equals(encounter.Id))) continue;
             if (encounter.IsValidForAct(__instance)) yield return encounter;
         }
     }
 
     static IEnumerable<EventModel> AddCustomEvents(IEnumerable<EventModel> result, ActModel __instance)
     {
-        foreach (var value in result)
+        List<EventModel> origResult = result.ToList();
+        foreach (var value in origResult)
         {
             yield return value;
         }
 
         foreach (var eventModel in CustomContentDictionary.ActCustomEvents)
         {
+            if (origResult.Any(existingEvent => existingEvent.Id.Equals(eventModel.Id))) continue;
             if (eventModel.Acts.Any(act => act.Id.Equals(__instance.Id))) yield return eventModel;
         }
     }
