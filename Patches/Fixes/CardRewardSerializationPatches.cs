@@ -2,7 +2,6 @@ using System.Runtime.CompilerServices;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using HarmonyLib;
-using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.Entities.Players;
 using MegaCrit.Sts2.Core.Models;
 using MegaCrit.Sts2.Core.Rewards;
@@ -42,7 +41,9 @@ internal static class RewardSerializationExt
     private static readonly ConditionalWeakTable<SerializableReward, RewardExtData> ExtTable = new();
 
     internal static void SetExtData(SerializableReward reward, RewardExtData data)
-        => ExtTable.AddOrUpdate(reward, data);
+    {
+        ExtTable.AddOrUpdate(reward, data);
+    }
 
     internal static bool TryGetExtData(SerializableReward reward, out RewardExtData? data)
     {
@@ -53,13 +54,15 @@ internal static class RewardSerializationExt
     }
 
     internal static string MakeKey(ulong netId, int index)
-        => $"{KeyPrefix}{netId}_{index}";
+    {
+        return $"{KeyPrefix}{netId}_{index}";
+    }
 
     internal static bool TryParseKey(string key, out ulong netId, out int index)
     {
         netId = 0;
         index = 0;
-        if (!key.StartsWith(KeyPrefix)) return false;
+        if (!key.StartsWith(KeyPrefix, StringComparison.Ordinal)) return false;
 
         var rest = key.AsSpan(KeyPrefix.Length);
         var sep = rest.IndexOf('_');
@@ -69,7 +72,10 @@ internal static class RewardSerializationExt
                && int.TryParse(rest[(sep + 1)..], out index);
     }
 
-    internal static string ToJson(RewardExtData data) => JsonSerializer.Serialize(data);
+    internal static string ToJson(RewardExtData data)
+    {
+        return JsonSerializer.Serialize(data);
+    }
 
     internal static RewardExtData? FromJson(string json)
     {
@@ -77,8 +83,14 @@ internal static class RewardSerializationExt
         {
             return JsonSerializer.Deserialize<RewardExtData>(json);
         }
-        catch
+        catch (JsonException ex)
         {
+            BaseLibMain.Logger.Debug($"[BaseLib] Reward ext JSON deserialize failed: {ex.Message}");
+            return null;
+        }
+        catch (NotSupportedException ex)
+        {
+            BaseLibMain.Logger.Debug($"[BaseLib] Reward ext JSON deserialize not supported: {ex.Message}");
             return null;
         }
     }
@@ -95,7 +107,7 @@ public static class CardRewardToSerializablePatch
         AccessTools.MethodDelegate<Func<CardReward, int>>(
             AccessTools.DeclaredPropertyGetter(typeof(CardReward), "OptionCount"));
 
-    static bool Prefix(CardReward __instance, ref SerializableReward __result)
+    private static bool Prefix(CardReward __instance, ref SerializableReward __result)
     {
         var options = GetOptions(__instance);
         var hasFlags = options.Flags != 0;
@@ -174,10 +186,9 @@ public static class CardRewardToSerializablePatch
 [HarmonyPatch(typeof(CombatRoom), nameof(CombatRoom.ToSerializable))]
 public static class CombatRoomToSerializableRewardExtPatch
 {
-    static void Postfix(ref SerializableRoom __result)
+    private static void Postfix(ref SerializableRoom __result)
     {
         foreach (var (netId, rewards) in __result.ExtraRewards)
-        {
             for (var i = 0; i < rewards.Count; i++)
             {
                 if (!RewardSerializationExt.TryGetExtData(rewards[i], out var ext) || ext == null)
@@ -187,17 +198,15 @@ public static class CombatRoomToSerializableRewardExtPatch
                 __result.EncounterState ??= new Dictionary<string, string>();
                 __result.EncounterState[key] = RewardSerializationExt.ToJson(ext);
             }
-        }
     }
 }
 
 [HarmonyPatch(typeof(CombatRoom), nameof(CombatRoom.FromSerializable))]
 public static class CombatRoomFromSerializableRewardExtPatch
 {
-    static void Prefix(SerializableRoom serializableRoom)
+    private static void Prefix(SerializableRoom serializableRoom)
     {
         if (serializableRoom.EncounterState != null)
-        {
             foreach (var (key, json) in serializableRoom.EncounterState)
             {
                 if (!RewardSerializationExt.TryParseKey(key, out var netId, out var index))
@@ -213,17 +222,14 @@ public static class CombatRoomFromSerializableRewardExtPatch
                 if (ext != null)
                     RewardSerializationExt.SetExtData(rewards[index], ext);
             }
-        }
 
         foreach (var (_, rewards) in serializableRoom.ExtraRewards)
         {
             var removed = rewards.RemoveAll(r => r.RewardType == RewardType.None);
             if (removed > 0)
-            {
                 BaseLibMain.Logger.Warn(
                     $"[BaseLib] Stripped {removed} RewardType.None entry(s) from ExtraRewards " +
                     "(e.g. LinkedRewardSet) — serialization for this type is not supported.");
-            }
         }
     }
 }
@@ -231,7 +237,7 @@ public static class CombatRoomFromSerializableRewardExtPatch
 [HarmonyPatch(typeof(Reward), nameof(Reward.FromSerializable))]
 public static class RewardFromSerializableExtPatch
 {
-    static bool Prefix(SerializableReward save, Player player, ref Reward __result)
+    private static bool Prefix(SerializableReward save, Player player, ref Reward __result)
     {
         if (save.RewardType != RewardType.Card
             || !RewardSerializationExt.TryGetExtData(save, out var ext)
