@@ -1,4 +1,5 @@
 using BaseLib.Abstracts;
+using BaseLib.Common.Rewards;
 using BaseLib.Extensions;
 using HarmonyLib;
 using MegaCrit.Sts2.Core.CardSelection;
@@ -6,6 +7,7 @@ using MegaCrit.Sts2.Core.Combat;
 using MegaCrit.Sts2.Core.Commands;
 using MegaCrit.Sts2.Core.Entities.Players;
 using MegaCrit.Sts2.Core.Factories;
+using MegaCrit.Sts2.Core.Localization;
 using MegaCrit.Sts2.Core.Models;
 using MegaCrit.Sts2.Core.Multiplayer.Game;
 using MegaCrit.Sts2.Core.Nodes.CommonUi;
@@ -72,6 +74,25 @@ public static class RewardSynchronizerExtensions
     /// Exposes the private INetGameService property
     /// </summary>
     public static INetGameService? GameService(this RewardSynchronizer rewardSynchronizer)  => rewardSynchronizer._gameService;
+
+
+    /// <summary>
+    /// Method to handle transforming a card as a combat reward
+    /// </summary>
+    public static async Task<bool> DoLocalCardTransform(this RewardSynchronizer rewardSynchronizer, int amount = 1, bool upgrade = false)
+    {
+        ZZ_CardTransformRewardMessage message = new ZZ_CardTransformRewardMessage
+        {
+            Location = rewardSynchronizer.MessageBuffer()!.CurrentLocation,
+            wasSkipped = false,
+            Upgrade = upgrade,
+            Amount = amount
+        };
+        BaseLibMain.Logger.Debug($"Transforming card for local player {rewardSynchronizer.LocalPlayerRef}");
+
+        rewardSynchronizer.GameService().SendMessage(message);
+        return await rewardSynchronizer.DoCardTransform(rewardSynchronizer.LocalPlayerRef()!, amount, upgrade);
+    }
 
     /// <summary>
     /// Transform a card for a specific player as a combat reward

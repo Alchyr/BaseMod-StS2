@@ -1,4 +1,5 @@
 using Baselib.Patches.Content;
+using BaseLib.Common.Rewards;
 using MegaCrit.Sts2.Core.Entities.Players;
 using MegaCrit.Sts2.Core.Multiplayer.Game;
 using MegaCrit.Sts2.Core.Rewards;
@@ -16,6 +17,7 @@ public delegate T SerializableCustomReward<out T>(SerializableReward save, Playe
 /// "New type" does not mean this should be used for card pool rewards, or single card rewards.
 /// Use <see cref="CardReward"/> and <see cref="SpecialCardReward"/> respectively,
 /// though be mindful that you don't use a constructor that is unsupported by the base-game structure.
+/// <seealso cref="CardTransformReward"/>
 /// </summary>
 public abstract class CustomReward(Player player) : Reward(player)
 {
@@ -41,6 +43,7 @@ public abstract class CustomReward(Player player) : Reward(player)
     /// </code>
     /// </example>
     public abstract SerializableCustomReward<CustomReward> SerializeMethod { get; }
+
 
     /// <summary>
     /// Base method to handle registering your reward for serializing and deserializing in <see cref="RewardSynchronizer"/>
