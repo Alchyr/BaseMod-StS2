@@ -1,4 +1,5 @@
 ﻿using MegaCrit.Sts2.Core.Random;
+using MegaCrit.Sts2.Core.Runs;
 
 namespace BaseLib.Utils;
 
@@ -32,26 +33,26 @@ public class OptionPools
     
     public IEnumerable<AncientOption> AllOptions => _pools.SelectMany(pool => pool);
     
-    public List<AncientOption> Roll(Rng rng)
+    public List<AncientOption> Roll(Rng rng, IRunState runState)
     {
         List<AncientOption> result = [];
         
         var pool = _pools[0];
-        WeightedList<AncientOption> rollPool = [..pool];
+        WeightedList<AncientOption> rollPool = [..pool.Where(option => option.ModelForOption.IsAllowed(runState))];
         
         result.Add(rollPool.GetRandom(rng, true));
 
         if (pool != _pools[1])
         {
             pool = _pools[1];
-            rollPool = [..pool];
+            rollPool = [..pool.Where(option => option.ModelForOption.IsAllowed(runState))];
         }
         result.Add(rollPool.GetRandom(rng, true));
 
         if (pool != _pools[2])
         {
             pool = _pools[2];
-            rollPool = [..pool];
+            rollPool = [..pool.Where(option => option.ModelForOption.IsAllowed(runState))];
         }
         result.Add(rollPool.GetRandom(rng, true));
 

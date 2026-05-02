@@ -63,7 +63,7 @@ public abstract class CustomAncientModel : AncientEventModel, ICustomModel, ILoc
     
     protected override IReadOnlyList<EventOption> GenerateInitialOptions()
     {
-        var options = OptionPools.Roll(Rng);
+        var options = OptionPools.Roll(Rng, Owner!.RunState);
         return options.Select(option => RelicOption(option.ModelForOption)).ToList();
     }
     
