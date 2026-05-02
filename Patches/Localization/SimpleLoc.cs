@@ -50,16 +50,20 @@ public static partial class SimpleLoc
         }
     }
 
-    [GeneratedRegex(@"\*(.+?)(?:\*|$|([\s\.|}]))")] private static partial Regex HighlightRegex { get; }
+    [GeneratedRegex(@"(^|[^/])\*(.+?)(?:\*|$|([\s\.|}]))")]
+    private static partial Regex GoldHighlightRegex { get; }
+
+    [GeneratedRegex(@"(^|[^/])\$(.+?)(?:\$|$|([\s\.|}]))")]
+    static partial Regex BlueHighlightRegex { get; }
 
     [GeneratedRegex(@"({)([^:}.]+)([:}])")] private static partial Regex NormalVariableRegex { get; }
     [GeneratedRegex(@"!(.*?)!")] private static partial Regex DiffVariableRegex { get; }
     [GeneratedRegex(@"@(.*?)@")] private static partial Regex InverseVariableRegex { get; }
     
-    [GeneratedRegex(@"(?:(?:-(.+?)-)|(?:\+(.+?)\+))(?:\+(.+?)\+)?")]
+    [GeneratedRegex(@"(?:(?:-(.+?)-)|(?:\+(.+?)\+))(?:\+(.+?)\+)?")] 
     private static partial Regex UpgradeSwapRegex { get; }
 
-    [GeneratedRegex(@"({)([^{]+?)((?::.*)?}.*?)\(([^()]+?)\)")]
+    [GeneratedRegex(@"({)([^{]+?)((?::.*)?}.*?)\(([^()]+?)\)")] 
     private static partial Regex PluralizeRegex { get; }
     
     [GeneratedRegex(@"\[(?:(E\?)|(E+))\]")]
@@ -87,7 +91,9 @@ public static partial class SimpleLoc
     private static string Simplify(string loc)
     {
         if (loc.StartsWith('#')) return loc; //if loc starts with '##' remove first one and cancel simplify
-        loc = HighlightRegex.Replace(loc, "[gold]$1[/gold]$2");
+        loc = GoldHighlightRegex.Replace(loc, "$1[gold]$2[/gold]$3");
+        loc = BlueHighlightRegex.Replace(loc, "$1[blue]$2[/blue]$3");
+        loc = loc.Replace("/*", "*").Replace("/$", "$");
         loc = NormalVariableRegex.Replace(loc, match => $"{match.Groups[1].Value}{SpecialVarDictionary.GetValueOrDefault(match.Groups[2].Value, match.Groups[2].Value)}{match.Groups[3].Value}");
         loc = DiffVariableRegex.Replace(loc, match => ReplaceVarName(match, ":diff()"));
         loc = InverseVariableRegex.Replace(loc, match => ReplaceVarName(match, ":inverseDiff()"));
