@@ -73,44 +73,6 @@ public static class RewardSynchronizerExtensions
     /// </summary>
     public static INetGameService? GameService(this RewardSynchronizer rewardSynchronizer)  => rewardSynchronizer._gameService;
 
-    /// <summary>
-    /// Transform a card for a specific player as a combat reward
-    /// </summary>
-    public static async Task<bool> DoCardTransform(this RewardSynchronizer rewardSynchronizer, Player player, int amount = 1, bool upgrade = false)
-    {
-        CardSelectorPrefs prefs = new CardSelectorPrefs(
-                upgrade
-                    ? CardSelectorPrefsExtensions.TransformAndUpgradeSelectionPrompt
-                    : CardSelectorPrefs.TransformSelectionPrompt,
-                1,
-                amount)
-        {
-            Cancelable = true,
-            RequireManualConfirmation = true
-        };
-
-        List<CardModel> cards = (await CardSelectCmd.FromDeckForTransformation(player, prefs)).ToList();
-
-        BaseLibMain.Logger.Debug($"Current combat state for transform rewards is: IsEnding={CombatManager.Instance.IsEnding}");
-        foreach (CardModel card in cards)
-        {
-            CardModel newCard = CardFactory.CreateRandomCardForTransform(
-                    card,
-                    isInCombat: false,
-                    player.RunState.Rng.Niche);
-
-            if (upgrade || card.IsUpgraded) // need a more robust handler for multi-upgrade at some point
-            {
-                CardCmd.Upgrade(newCard);
-            }
-
-            await CardCmd.Transform(card, newCard, CardPreviewStyle.GridLayout);
-            BaseLibMain.Logger.Debug($"Player {player.NetId} transformed {card.Id} in their deck into {newCard.Id}" + (upgrade ? " and upgraded it." : "."));
-        }
-
-        return cards.Count > 0;
-    }
-
     [HarmonyPatch(nameof(RewardSynchronizer.OnCombatEnded))]
     [HarmonyPrefix]
     private static void OnCombat_HandleCustomBufferedMessages(RewardSynchronizer __instance)

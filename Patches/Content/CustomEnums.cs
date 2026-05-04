@@ -357,7 +357,13 @@ class GenEnumValues
                     BaseLibMain.Logger.Error($"Reward instance creation for type {t.GetType()} from {t.Assembly} failed during Initialize");
                     continue;
                 }
+
                 BaseLibMain.Logger.Debug($"Initializing CustomReward inheriting class {dummyReward.GetType()}");
+                if (dummyReward.ToSerializable().RewardType == RewardType.None) // This will cause a crash if loading a saved reward screen with this reward in it
+                {
+                    // This wants to be in the analyzer too, don't know how though
+                    throw new InvalidDataException($"CustomReward {dummyReward.GetType()}'s ToSerializable method returns RewardType None or doesn't set RewardType");
+                }
                 dummyReward.Initialize();
             }
         }
