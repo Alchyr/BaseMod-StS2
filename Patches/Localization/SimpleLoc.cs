@@ -59,7 +59,7 @@ public static partial class SimpleLoc
     [GeneratedRegex(@"(?:(?:-(.+?)-)|(?:\+(.+?)\+))(?:\+(.+?)\+)?")]
     private static partial Regex UpgradeSwapRegex { get; }
 
-    [GeneratedRegex(@"({)([^{]+?)((?::.*)?}.*?)\(([^()]+?)\)")]
+    [GeneratedRegex(@"(.*{)([^{]+?)((?::.*)?}.*?)\(([^()]+?)\)")]
     private static partial Regex PluralizeRegex { get; }
     
     [GeneratedRegex(@"\[(?:(E\?)|(E+))\]")]
