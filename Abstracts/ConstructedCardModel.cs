@@ -345,10 +345,30 @@ public abstract class ConstructedCardModel(
         return this;
     }
     
+    /// <summary>
+    /// Adds the tooltip for Energy to this card.
+    /// </summary>
+    /// <returns></returns>
     protected ConstructedCardModel WithEnergyTip()
     {
         _hoverTips.Add(new(HoverTipFactory.ForEnergy));
         return this;
+    }
+    
+    /// <summary>
+    /// Adds a CardTip for a card that will be upgraded when this card is upgraded.
+    /// </summary>
+    /// <param name="modifyTipCard">An action that will receive the preview card and current card before the tip is generated.</param>
+    protected ConstructedCardModel WithUpgradingCardTip<T>(Action<T, CardModel>? modifyTipCard = null)
+        where T : CardModel
+    {
+        return WithTip(new TooltipSource(card =>
+        {
+            var tipCard = ModelDb.Card<T>().ToMutable();
+            if (card.IsUpgraded) tipCard.UpgradeInternal();
+            if (tipCard is T t) modifyTipCard?.Invoke(t, card);
+            return HoverTipFactory.FromCard(tipCard);
+        }));
     }
     
     /// <summary>
