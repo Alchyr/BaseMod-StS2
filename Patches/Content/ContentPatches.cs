@@ -1,6 +1,7 @@
 using System.Reflection;
 using System.Text;
 using BaseLib.Abstracts;
+using BaseLib.Extensions;
 using BaseLib.Utils;
 using BaseLib.Utils.Patching;
 using HarmonyLib;
@@ -24,6 +25,7 @@ public static class CustomContentDictionary
     private static readonly Dictionary<Type, Type> PoolTypes = [];
     public static readonly List<CustomEncounterModel> CustomEncounters = [];
     public static readonly List<CustomAncientModel> CustomAncients = [];
+    public static readonly List<Type> CustomBadgeTypes = [];
     /// <summary>
     /// Custom events tied to a specific act.
     /// </summary>
@@ -65,14 +67,14 @@ public static class CustomContentDictionary
     {
         if (!RegisterType(encounter.GetType())) return;
 
-        CustomEncounters.Add(encounter);
+        CustomEncounters.InsertSorted(encounter);
     }
 
     public static void AddAncient(CustomAncientModel ancient)
     {
         if (!RegisterType(ancient.GetType())) return;
         
-        CustomAncients.Add(ancient);
+        CustomAncients.InsertSorted(ancient);
     }
     
     public static void AddEvent(CustomEventModel eventModel)
@@ -81,19 +83,28 @@ public static class CustomContentDictionary
 
         if (eventModel.Acts.Length == 0)
         {
-            SharedCustomEvents.Add(eventModel);
+            SharedCustomEvents.InsertSorted(eventModel);
         }
         else
         {
-            ActCustomEvents.Add(eventModel);
+            ActCustomEvents.InsertSorted(eventModel);
         }
     }
 
+    
+    public static bool AddBadge(Type badgeType)
+    {
+        if (!RegisterType(badgeType)) return false;
+        CustomBadgeTypes.Add(badgeType);
+        return true;
+    }
+
+  
     public static void AddAct(CustomActModel actModel)
     {
         if (!RegisterType(actModel.GetType())) return;
         
-        CustomActs.Add(actModel);
+        CustomActs.InsertSorted(actModel);
     }
     
     private static bool IsValidPool(Type modelType, Type poolType)
@@ -109,7 +120,18 @@ public static class CustomContentDictionary
         }
         throw new Exception($"Model {modelType.FullName} is assigned to {poolType.FullName} which is not a valid pool type.");
     }
+    
+    [HarmonyPostfix]
+    static void ScanCustomBadges()
+    {
+        foreach (var type in ReflectionHelper.GetSubtypesInMods<CustomBadge>()
+                     .Where(t => !t.IsAbstract))
+        {
+            var added = AddBadge(type);
+        }
+    }
 }
+
 
 [HarmonyPatch(typeof(ModelDb), nameof(ModelDb.AllSharedAncients), MethodType.Getter)]
 class CustomAncientExistence
@@ -356,26 +378,30 @@ public static class AddActContent
 
     static IEnumerable<EncounterModel> AddCustomEncounters(IEnumerable<EncounterModel> result, ActModel __instance)
     {
-        foreach (var value in result)
+        List<EncounterModel> origResult = result.ToList();
+        foreach (var value in origResult)
         {
             yield return value;
         }
 
         foreach (var encounter in CustomContentDictionary.CustomEncounters)
         {
+            if (origResult.Any(existingEncounter => existingEncounter.Id.Equals(encounter.Id))) continue;
             if (encounter.IsValidForAct(__instance)) yield return encounter;
         }
     }
 
     static IEnumerable<EventModel> AddCustomEvents(IEnumerable<EventModel> result, ActModel __instance)
     {
-        foreach (var value in result)
+        List<EventModel> origResult = result.ToList();
+        foreach (var value in origResult)
         {
             yield return value;
         }
 
         foreach (var eventModel in CustomContentDictionary.ActCustomEvents)
         {
+            if (origResult.Any(existingEvent => existingEvent.Id.Equals(eventModel.Id))) continue;
             if (eventModel.Acts.Any(act => act.Id.Equals(__instance.Id))) yield return eventModel;
         }
     }

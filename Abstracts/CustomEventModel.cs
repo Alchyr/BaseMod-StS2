@@ -18,6 +18,12 @@ public abstract class CustomEventModel : EventModel, ICustomModel, ILocalization
 
     //Note - most shared events define an IsAllowed condition that check runState.CurrentActIndex
     //Until all possible events in an act are seen, events already seen in a run will be skipped
+    /// <summary>
+    /// The acts this event can spawn in.
+    /// If none are set, the event will be considered a "shared" event and can spawn in any act.
+    /// If you don't want the event to spawn, override IsAllowed.
+    /// If making a custom act, set this rather than adding to the act model's event list.
+    /// </summary>
     public virtual ActModel[] Acts => [];
 
     /*

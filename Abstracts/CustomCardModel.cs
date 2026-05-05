@@ -124,7 +124,7 @@ class CustomCardBannerMaterial
     {
         if (__instance is not CustomCardModel customCard) return true;
         
-        __result = customCard.CustomFrameMaterial;
+        __result = customCard.CustomBannerMaterial;
         return __result == null;
     }
 }

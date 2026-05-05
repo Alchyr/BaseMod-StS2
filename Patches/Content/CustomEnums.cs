@@ -9,6 +9,7 @@ using HarmonyLib;
 using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.Helpers;
 using MegaCrit.Sts2.Core.Models;
+using MegaCrit.Sts2.Core.Rewards;
 
 namespace BaseLib.Patches.Content;
 
@@ -339,15 +340,32 @@ class GenEnumValues
             }
             
             //Following code is exclusively for CustomPile
-            if (field.FieldType != typeof(PileType)) continue;
-            if (!t.IsAssignableTo(typeof(CustomPile))) continue; 
-                
-            var constructor = t.GetConstructor(BindingFlags.Instance | BindingFlags.Public, []) ?? throw new Exception($"CustomPile {t.FullName} with custom PileType does not have an accessible no-parameter constructor");
-                
-            var pileType = (PileType?)field.GetValue(null);
-            if (pileType == null) throw new Exception($"Failed to be set up custom PileType in {t.FullName}");
-                
-            CustomPiles.RegisterCustomPile((PileType) pileType, () => (CustomPile) constructor.Invoke(null));
+            if (field.FieldType == typeof(PileType) && t.IsAssignableTo(typeof(CustomPile)))
+            {
+                var constructor = t.GetConstructor(BindingFlags.Instance | BindingFlags.Public, []) ?? throw new Exception($"CustomPile {t.FullName} with custom PileType does not have an accessible no-parameter constructor");
+
+                var pileType = (PileType?)field.GetValue(null);
+                if (pileType == null) throw new Exception($"Failed to be set up custom PileType in {t.FullName}");
+
+                CustomPiles.RegisterCustomPile((PileType) pileType, () => (CustomPile) constructor.Invoke(null));
+            }
+
+            if (field.FieldType == typeof(RewardType) && t.IsAssignableTo(typeof(CustomReward)))
+            {
+                if (t.CreateInstance() is not CustomReward dummyReward)
+                {
+                    BaseLibMain.Logger.Error($"Reward instance creation for type {t.GetType()} from {t.Assembly} failed during Initialize");
+                    continue;
+                }
+
+                BaseLibMain.Logger.Debug($"Initializing CustomReward inheriting class {dummyReward.GetType()}");
+                if (dummyReward.ToSerializable().RewardType == RewardType.None) // This will cause a crash if loading a saved reward screen with this reward in it
+                {
+                    // This wants to be in the analyzer too, don't know how though
+                    throw new InvalidDataException($"CustomReward {dummyReward.GetType()}'s ToSerializable method returns RewardType None or doesn't set RewardType");
+                }
+                dummyReward.Initialize();
+            }
         }
     }
 }
