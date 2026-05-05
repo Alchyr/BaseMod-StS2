@@ -102,6 +102,9 @@ internal interface IAddedNodes<TParentType> where TParentType : Node
     }
 }
 
+/// <summary>
+/// Adds a node as a child to all instances of the specified parent node type.
+/// </summary>
 public class AddedNode<TParentType, TNode> : SpireField<TParentType, TNode>, IAddedNodes<TParentType> where TParentType : Node where TNode : Node
 {
     
@@ -111,6 +114,12 @@ public class AddedNode<TParentType, TNode> : SpireField<TParentType, TNode>, IAd
         IAddedNodes<TParentType>.PatchNodeReady();
     }
 
+    /// <summary>
+    /// An AddedNode that adds a specific scene as a child.
+    /// </summary>
+    /// <param name="scenePath">.tscn resource file path of the scene to instantiate.</param>
+    /// <param name="extraSetup">If additional properties of the scene need to be set up before it is added as a child,
+    /// or to add it as a child in a specific way.</param>
     public AddedNode(string scenePath, Action<TParentType, TNode>? extraSetup = null) :
         this(parent =>
         {
