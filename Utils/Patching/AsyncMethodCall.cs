@@ -247,6 +247,7 @@ public static class AsyncMethodCall
         List<CodeInstruction>? betweenSection = null;
         List<StateInfo> states = [];
         HashSet<Label> leaveLabels = [];
+        int newStateIndex = states.Count;
         
         int currentState = -3;
         List<CodeInstruction> stateSection = [];
@@ -298,7 +299,10 @@ public static class AsyncMethodCall
                         {
                             --index; //Use this instruction as start of next state.
                         }
-                        states.Add(new StateInfo(currentState, stateSection, stateField));
+                        var nextState = new StateInfo(currentState, stateSection, stateField);
+                        states.Add(nextState);
+                        if (nextState.Index >= newStateIndex)
+                            newStateIndex = nextState.Index + 1;
                         break;
                 }
 
@@ -382,8 +386,6 @@ public static class AsyncMethodCall
         
         //BaseLibMain.Logger.Info($"Return label: {retLabel.Id}");
         //BaseLibMain.Logger.Info($"Return value label: {retValLabel.Id}");
-
-        int newStateIndex = states.Count;
         
         //Look for fields that match target method parameter names
         var methodCallParams = callMethod.GetParameters().Select(param => MakeStateParameter(original, stateMachineType, param)).ToList();
