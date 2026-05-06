@@ -19,6 +19,10 @@ internal class BaseLibConfig : SimpleModConfig
     [ConfigSlider(8, 48, Format = "{0:0} px")]
     public static int LogFontSize { get; set; } = 14;
 
+    [ConfigSection("GeneralSettings")]
+    [ConfigSlider(1, 64)]
+    public static int SfxPlayerLimit { get; set; } = 16;
+
     [ConfigSection("HarmonyDumpSection")]
     [ConfigTextInput(MaxLength = 1024)]
     public static string HarmonyPatchDumpOutputPath { get; set; } = "";

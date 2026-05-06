@@ -12,6 +12,11 @@
   "BASELIB-SHOW_MOD_CONFIG_IN_MAIN_MENU.hover.title": "Show Mod Configuration in main menu",
   "BASELIB-SHOW_MOD_CONFIG_IN_MAIN_MENU.hover.desc": "There's always an entry in the game's settings.",
 
+  "BASELIB-GENERAL_SETTINGS.title": "General Settings",
+  
+  "BASELIB-SFX_PLAYER_LIMIT.title": "Sound Effect Limit",
+  "BASELIB-SFX_PLAYER_LIMIT.hover.desc": "Maximum number of sound effects that can be played through BaseLib at the same time.",
+
   "BASELIB-LOG_SECTION.title": "Log window/Console",
 
   "BASELIB-OPEN_LOG_WINDOW_ON_STARTUP.title": "Open log window on startup",
