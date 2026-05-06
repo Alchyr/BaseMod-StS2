@@ -1,5 +1,10 @@
+using BaseLib.Extensions;
 using Baselib.Patches.Content;
 using MegaCrit.Sts2.Core.Entities.Players;
+using MegaCrit.Sts2.Core.Helpers;
+using MegaCrit.Sts2.Core.Localization;
+using MegaCrit.Sts2.Core.Localization.DynamicVars;
+using MegaCrit.Sts2.Core.Models;
 using MegaCrit.Sts2.Core.Multiplayer.Game;
 using MegaCrit.Sts2.Core.Rewards;
 using MegaCrit.Sts2.Core.Saves.Runs;
@@ -18,6 +23,16 @@ public delegate T CreateRewardFromSave<out T>(SerializableReward save, Player pl
 /// </summary>
 public abstract class CustomReward(Player player) : Reward(player)
 {
+    /// <summary>
+    /// Recommended for use in the reward's Description method. If additional variables are needed for the localization,
+    /// add them using locString.Add("Key", value).
+    /// </summary>
+    /// <returns>A LocString for the gameplay_ui table with the key MODID-REWARD_CLASS_NAME</returns>
+    public LocString GetLoc()
+    {
+        return new LocString("gameplay_ui", GetType().GetPrefix() + StringHelper.Slugify(GetType().Name));
+    }
+    
     /** Other Overrides
      * Populate - Prepares actual contents of rewards. Called if IsPopulated is false.
      * IsPopulated - Return true if reward is ready. Should be true after Populate is successfully called, or by default
@@ -57,22 +72,19 @@ public abstract class CustomReward(Player player) : Reward(player)
     /// </summary>
     public virtual void Initialize()
     {
-        // if (SerializeMethod?.Method.IsStatic == true)
-        if (DeserializeMethod != null) // TODO: test that the constructor doesn't have to be static?
+        if (DeserializeMethod != null)
         {
-            BaseLibMain.Logger.Info($"Registering CustomReward serializer for {GetType()}");
+            if (DeserializeMethod.Target != null)
+            {
+                throw new ArgumentException($"DeserializeMethod of {GetType()} is not static");
+            }
+            BaseLibMain.Logger.Info($"Registering CustomReward deserializer for {GetType()}");
             CustomRewardPatches.RegisterCustomReward(RewardType, DeserializeMethod);
-        }
-        else if (DeserializeMethod != null)
-        {
-            throw new FieldAccessException($"Custom Reward {GetType()} has assigned a non-static method to SerializeMethod property");
         }
         else
         {
-            throw new NotImplementedException($"Custom Reward {GetType()} has not implemented an Initialize() method to register a serializer for itself");
+            throw new NotImplementedException($"Custom Reward {GetType()} has not implemented a DeserializeMethod or overriden Initialize to register a deserializer for itself");
         }
     }
-
-    // TODO: per-mod id prefixing for localisation?
 }
 
