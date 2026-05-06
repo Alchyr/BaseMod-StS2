@@ -93,7 +93,8 @@ class PostModInitPatch
         var genericTypeDef = fType.GetGenericTypeDefinition();
 
         if (genericTypeDef != typeof(SavedSpireField<,>) &&
-            genericTypeDef != typeof(AddedNode<,>))
+            genericTypeDef != typeof(AddedNode<,>) &&
+            genericTypeDef != typeof(SpireMethod.SpireMethod<>))
             return;
 
         field.GetValue(null); //Trigger field initialization
