@@ -55,6 +55,8 @@ public abstract class PlaceholderCharacterModel : CustomCharacterModel
         => ImageHelper.GetImagePath("packed/character_select/char_select_" + PlaceholderID + "_locked.png");
 
     public override string CharacterSelectSfx => $"event:/sfx/characters/{PlaceholderID}/{PlaceholderID}_select";
+    
+    public override string CharacterTransitionSfx => $"event:/sfx/ui/wipe_{PlaceholderID}";
 
     public override string CustomAttackSfx => $"event:/sfx/characters/{PlaceholderID}/{PlaceholderID}_attack";
 
