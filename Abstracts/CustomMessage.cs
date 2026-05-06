@@ -42,8 +42,9 @@ public abstract class CustomMessage : INetMessage, ICustomMessage
     /// The way to transfer the message
     /// </summary>
     public abstract NetTransferMode Mode { get; }
+
     /// <summary>
     /// What log level to output to (referenced when calling the vanilla handler(s) for messages)
     /// </summary>
-    public abstract LogLevel LogLevel { get; }
+    public virtual LogLevel LogLevel => LogLevel.VeryDebug;
 }
