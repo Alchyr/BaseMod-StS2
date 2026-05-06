@@ -20,6 +20,10 @@ public abstract class PlaceholderCharacterModel : CustomCharacterModel
 
     public override string? CustomIconTexturePath
         => ImageHelper.GetImagePath("ui/top_panel/character_icon_" + PlaceholderID + ".png");
+    public override string? CustomIconOutlineTexturePath
+    {
+        get => ImageHelper.GetImagePath($"ui/top_panel/character_icon_{PlaceholderID}_outline.png");
+    }
 
     public override string CustomEnergyCounterPath =>
         SceneHelper.GetScenePath("combat/energy_counters/" + PlaceholderID + "_energy_counter");
