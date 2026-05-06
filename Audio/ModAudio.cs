@@ -36,13 +36,6 @@ public static class ModAudio
     internal static readonly StringName SfxBus = "SFX";
     internal static readonly StringName MasterBus = "Master";
     
-    private const float VolumeOffset = -3f;
-    
-    //Add config properties: SfxPlayerLimit, MusicPlayerLimit
-    //Cap number of audiostreamplayers that can be active.
-    //Pool players.
-    //Dictionary - PlayersForBus? Specifically, StringName => Pool of players?
-
     private static Dictionary<SoundType, StreamPlayerPool> _playerPools = [];
     private static List<AudioStreamPlayer> _activeMusic = [];
     private static List<AudioStreamPlayer> _activeAmbience = [];
