@@ -67,8 +67,7 @@ public abstract class CustomReward(Player player) : Reward(player)
 
     /// <summary>
     /// Base method to handle registering your reward for serializing and deserializing in <see cref="RewardSynchronizer"/>
-    /// Override this if you wish to manually register your reward with <see cref="CustomRewardPatches.RegisterCustomReward(RewardType, CreateRewardFromSave{T})"/>
-    /// or by getting your own reference to the <see cref="RunLocationTargetedMessageBuffer"/> used for the <see cref="RewardSynchronizer"/> instance
+    /// Override this if you wish to manually register your reward with <see cref="CustomRewardPatches.RegisterCustomReward(RewardType, CreateRewardFromSave&lt;CustomReward&gt;)"/>
     /// </summary>
     public virtual void Initialize()
     {
