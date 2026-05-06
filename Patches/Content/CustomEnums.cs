@@ -361,15 +361,22 @@ class GenEnumValues
             {
                 if (t.CreateInstance() is not CustomReward dummyReward)
                 {
-                    BaseLibMain.Logger.Error($"Reward instance creation for type {t.GetType()} from {t.Assembly} failed during Initialize");
+                    BaseLibMain.Logger.Error($"Reward instance creation for type {t} from {t.Assembly} failed during Initialize");
                     continue;
                 }
 
                 BaseLibMain.Logger.Debug($"Initializing CustomReward inheriting class {dummyReward.GetType()}");
-                if (dummyReward.ToSerializable().RewardType == RewardType.None) // This will cause a crash if loading a saved reward screen with this reward in it
+                var serializable = dummyReward.ToSerializable();
+                if (serializable.RewardType == RewardType.None) // This will cause a crash if loading a saved reward screen with this reward in it
                 {
                     // This wants to be in the analyzer too, don't know how though
-                    throw new InvalidDataException($"CustomReward {dummyReward.GetType()}'s ToSerializable method returns RewardType None or doesn't set RewardType");
+                    throw new InvalidOperationException($"CustomReward {dummyReward.GetType()}'s RewardType is None or doesn't set RewardType");
+                }
+                if (serializable.RewardType is >= RewardType.None and <= RewardType.SpecialCard)
+                {
+                    //Using a basegame type would result in intercepting reward loading of basegame rewards which is unintended for CustomReward
+                    throw new InvalidOperationException(
+                        $"$CustomReward {dummyReward.GetType()}'s RewardType is basegame type {serializable.RewardType} rather than a custom type");
                 }
                 dummyReward.Initialize();
             }
