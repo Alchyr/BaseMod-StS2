@@ -83,7 +83,7 @@ public abstract class CustomReward(Player player) : Reward(player)
         }
         else
         {
-            throw new NotImplementedException($"Custom Reward {GetType()} has not implemented a DeserializeMethod or overriden Initialize to register a deserializer for itself");
+            throw new InvalidOperationException($"Custom Reward {GetType()} has not implemented a DeserializeMethod or overriden Initialize to register a deserializer for itself");
         }
     }
 }

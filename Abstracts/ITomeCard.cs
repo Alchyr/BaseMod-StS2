@@ -25,7 +25,7 @@ public interface ITomeCard
                     return character;
             }
 
-            throw new NotImplementedException(
+            throw new InvalidOperationException(
                 "Default implementation of TomeCharacter in ITomeCard failed; override it manually.");
         }
     }
