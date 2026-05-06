@@ -58,10 +58,9 @@ public static class ModAudio
     private static float MasterVol => SaveManager.Instance.SettingsSave.VolumeMaster;
     private static float VolumeForSound(SoundType soundType) => soundType switch
     {
-        SoundType.Sfx => Mathf.LinearToDb(Mathf.Pow(MasterVol * SaveManager.Instance.SettingsSave.VolumeSfx, 2f)),
-        SoundType.Music => Mathf.LinearToDb(Mathf.Pow(MasterVol * SaveManager.Instance.SettingsSave.VolumeBgm, 2f)),
-        SoundType.Ambience => Mathf.LinearToDb(Mathf.Pow(MasterVol * SaveManager.Instance.SettingsSave.VolumeAmbience, 2f)),
-        _ => Mathf.LinearToDb(Mathf.Pow(MasterVol * 0.7f, 2f))
+        SoundType.Music => Mathf.LinearToDb(MasterVol * SaveManager.Instance.SettingsSave.VolumeBgm) + 3,
+        SoundType.Ambience => Mathf.LinearToDb(MasterVol * SaveManager.Instance.SettingsSave.VolumeAmbience) + 3,
+        _ => Mathf.LinearToDb(MasterVol * SaveManager.Instance.SettingsSave.VolumeSfx) + 3
     };
 
     private static StringName BusForSound(SoundType soundType) => soundType switch
@@ -178,6 +177,17 @@ public static class ModAudio
     public static AudioStreamPlayer? PlaySound(ModSound sound, float volumeAdd = 0f, float volumeMult = 1f, float pitchVariation = 0f,
         float basePitch = 1f, Node? targetNode = null)
     {
+        if (MasterVol <= 0)
+            return null;
+
+        if (sound.SoundType switch
+            {
+                SoundType.Music => SaveManager.Instance.SettingsSave.VolumeBgm,
+                SoundType.Ambience => SaveManager.Instance.SettingsSave.VolumeAmbience,
+                _ => SaveManager.Instance.SettingsSave.VolumeSfx
+            } < 0)
+            return null;
+        
         if (sound.SoundType == SoundType.Music)
         {
             foreach (var music in _activeMusic)
