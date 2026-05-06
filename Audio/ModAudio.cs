@@ -21,7 +21,7 @@ public static class ModAudio
         public int MaxCount = 0;
     }
     
-    public static readonly SpireField<AudioStreamPlayer, float> VolumeModDb = new(() => 0f);
+    public static readonly SpireField<AudioStreamPlayer, Func<float, float>> VolumeModDb = new(() => (val => val));
     
     public enum SoundType
     {
@@ -83,13 +83,13 @@ public static class ModAudio
         foreach (var player in _activeAmbience)
         {
             AudioStreamPlayerExtensions.CurrentTween[player]?.Kill();
-            player.VolumeDb = ambienceVol + VolumeModDb[player];
+            player.VolumeDb = VolumeModDb[player]!(ambienceVol);
         }
 
         foreach (var player in _activeMusic)
         {
             AudioStreamPlayerExtensions.CurrentTween[player]?.Kill();
-            player.VolumeDb = musicVol + VolumeModDb[player];
+            player.VolumeDb = VolumeModDb[player]!(musicVol);
         }
     }
 
@@ -159,23 +159,28 @@ public static class ModAudio
     /// <summary>
     /// A sound that will be played attached to the entire game (not cancelled if exiting run)
     /// </summary>
-    public static AudioStreamPlayer? PlaySoundGlobal(ModSound sound, float volume = 0f, float pitchVariation = 0f,
+    public static AudioStreamPlayer? PlaySoundGlobal(ModSound sound, float volumeAdd = 0f, float volumeMult = 1f, float pitchVariation = 0f,
         float basePitch = 1f)
     {
         var tree = Engine.GetMainLoop() as SceneTree;
-        return PlaySound(sound, volume, pitchVariation, basePitch, tree?.Root);
+        return PlaySound(sound, volumeAdd, volumeMult, pitchVariation, basePitch, tree?.Root);
     }
     
     /// <summary>
     /// A sound that will be played tied to the current run scene.
     /// </summary>
-    public static AudioStreamPlayer? PlaySoundInRun(ModSound sound, float volume = 0f, float pitchVariation = 0f,
+    public static AudioStreamPlayer? PlaySoundInRun(ModSound sound, float volumeAdd = 0f, float volumeMult = 1f, float pitchVariation = 0f,
         float basePitch = 1f)
     {
-        return PlaySound(sound, volume, pitchVariation, basePitch, NRun.Instance);
+        return PlaySound(sound, volumeAdd, volumeMult, pitchVariation, basePitch, NRun.Instance);
     }
-    
-    public static AudioStreamPlayer? PlaySound(ModSound sound, float volume = 0f, float pitchVariation = 0f,
+
+    /// <param name="sound">The sound to play</param>
+    /// <param name="volumeAdd">Adjustment to volume in dB</param>
+    /// <param name="volumeMult">Multiplier on final volume</param>
+    /// <param name="pitchVariation">Random pitch (and speed) variation; range is centered on basePitch</param>
+    /// <param name="basePitch">Pitch (and speed) to play sound at. 2f is twice the pitch, 0.5f is half the pitch.</param>
+    public static AudioStreamPlayer? PlaySound(ModSound sound, float volumeAdd = 0f, float volumeMult = 1f, float pitchVariation = 0f,
         float basePitch = 1f, Node? targetNode = null)
     {
         if (sound.SoundType == SoundType.Music)
@@ -216,8 +221,8 @@ public static class ModAudio
 
         player.Name = sound.File;
         player.Stream = stream;
-        player.VolumeDb = VolumeForSound(sound.SoundType) + volume;// + VolumeOffset;
-        VolumeModDb[player] = volume;
+        player.VolumeDb = (VolumeForSound(sound.SoundType) + volumeAdd) * volumeMult;
+        VolumeModDb[player] = val => (val + volumeAdd) * volumeMult;
         player.PitchScale = pitchVariation > 0f
             ? basePitch + (float)Rng.Chaotic.NextDouble() * 2f * pitchVariation - pitchVariation
             : basePitch;
@@ -273,7 +278,7 @@ public class AutoModAudio(string folder)
     /// <param name="volume">Adjustment to volume in dB</param>
     /// <param name="pitchVariation">Random pitch (and speed) variation; range is centered on basePitch</param>
     /// <param name="basePitch">Pitch (and speed) to play sound at. 2f is twice the pitch, 0.5f is half the pitch.</param>
-    public AudioStreamPlayer? PlaySfx(string path, float volume = 0f, float pitchVariation = 0f,
+    public AudioStreamPlayer? PlaySfx(string path, float volume = 0f, float volumeMult = 1f, float pitchVariation = 0f,
         float basePitch = 1f)
     {
         if (!_sounds.TryGetValue(path, out var sound))
@@ -288,7 +293,7 @@ public class AutoModAudio(string folder)
     /// <param name="volume">Adjustment to volume in dB</param>
     /// <param name="pitchVariation">Random pitch (and speed) variation; range is centered on basePitch</param>
     /// <param name="basePitch">Pitch (and speed) to play sound at. 2f is twice the pitch, 0.5f is half the pitch.</param>
-    public AudioStreamPlayer? PlayMusic(string path, float volume = 0f, float pitchVariation = 0f,
+    public AudioStreamPlayer? PlayMusic(string path, float volume = 0f, float volumeMult = 1f, float pitchVariation = 0f,
         float basePitch = 1f)
     {
         if (!_sounds.TryGetValue(path, out var sound))
@@ -303,7 +308,7 @@ public class AutoModAudio(string folder)
     /// <param name="volume">Adjustment to volume in dB</param>
     /// <param name="pitchVariation">Random pitch (and speed) variation; range is centered on basePitch</param>
     /// <param name="basePitch">Pitch (and speed) to play sound at. 2f is twice the pitch, 0.5f is half the pitch.</param>
-    public AudioStreamPlayer? PlayAmbience(string path, float volume = 0f, float pitchVariation = 0f,
+    public AudioStreamPlayer? PlayAmbience(string path, float volume = 0f, float volumeMult = 1f, float pitchVariation = 0f,
         float basePitch = 1f)
     {
         if (!_sounds.TryGetValue(path, out var sound))
@@ -349,11 +354,29 @@ public record ModSound
         return stream;
     }
 
-    /// <param name="volume">Adjustment to volume in dB</param>
+    /// <param name="volumeAdd">Adjustment to volume in dB</param>
+    /// <param name="volumeMult">Multiplier on final volume</param>
     /// <param name="pitchVariation">Random pitch (and speed) variation; range is centered on basePitch</param>
     /// <param name="basePitch">Pitch (and speed) to play sound at. 2f is twice the pitch, 0.5f is half the pitch.</param>
-    public AudioStreamPlayer? Play(float volume = 0f, float pitchVariation = 0f, float basePitch = 1f)
+    public AudioStreamPlayer? Play(float volumeAdd = 0f, float volumeMult = 1f, float pitchVariation = 0f, float basePitch = 1f)
     {
-        return ModAudio.PlaySound(this, volume + VolumeOffset, pitchVariation, basePitch);
+        return ModAudio.PlaySound(this, volumeAdd + VolumeOffset, volumeMult, pitchVariation, basePitch);
+    }
+
+
+    private static readonly Dictionary<string, ModSound> _convertedSounds = [];
+
+    /// <summary>
+    /// Auto-conversion of string to ModSound, where the string is a resource file path.
+    /// </summary>
+    /// <returns></returns>
+    public static implicit operator ModSound(string path)
+    {
+        if (!_convertedSounds.TryGetValue(path, out var sound))
+        {
+            _convertedSounds[path] = sound = new ModSound(path);
+        }
+
+        return sound;
     }
 }
