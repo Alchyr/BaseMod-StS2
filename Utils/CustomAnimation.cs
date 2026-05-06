@@ -7,7 +7,27 @@ namespace BaseLib.Utils;
 /// </summary>
 public static class CustomAnimation
 {
-    private static readonly SpireField<Node, Func<string[], bool>> _animHandler = new(() => null);
+    private static readonly SpireField<Node, Func<string[], bool?>> _animHandler = new(() => null);
+
+    private static bool? NoAnimation(string[] _)
+    {
+        return null;
+    }
+
+    public static bool HasCustomAnimation(Node visualRoot)
+    {
+        if (_animHandler[visualRoot] == null)
+        {
+            _animHandler[visualRoot] = FindNode<AnimationPlayer>(visualRoot)?.UseAnimationPlayer() ??
+                                       FindNode<AnimatedSprite2D>(visualRoot)?.UseAnimatedSprite2D() ??
+                                       SearchRecursive<AnimationPlayer>(visualRoot)?.UseAnimationPlayer() ??
+                                       SearchRecursive<AnimatedSprite2D>(visualRoot)?.UseAnimatedSprite2D() ??
+                                       NoAnimation;
+
+        }
+        
+        return _animHandler[visualRoot] != NoAnimation;
+    }
     
     /// <summary>
     /// Returns true if any custom animation source exists.
@@ -22,13 +42,14 @@ public static class CustomAnimation
             _animHandler[n] = FindNode<AnimationPlayer>(n)?.UseAnimationPlayer() ??
                               FindNode<AnimatedSprite2D>(n)?.UseAnimatedSprite2D() ??
                               SearchRecursive<AnimationPlayer>(n)?.UseAnimationPlayer() ??
-                              SearchRecursive<AnimatedSprite2D>(n)?.UseAnimatedSprite2D();
+                              SearchRecursive<AnimatedSprite2D>(n)?.UseAnimatedSprite2D() ??
+                              NoAnimation;
 
         }
         return _animHandler[n]?.Invoke(tryAnimNames) != null;
     }
 
-    private static Func<string[], bool> UseAnimatedSprite2D(this AnimatedSprite2D animSprite)
+    private static Func<string[], bool?> UseAnimatedSprite2D(this AnimatedSprite2D animSprite)
     {
         return (animNames) =>
         {
@@ -45,7 +66,7 @@ public static class CustomAnimation
         };
     }
 
-    private static Func<string[], bool> UseAnimationPlayer(this AnimationPlayer animPlayer)
+    private static Func<string[], bool?> UseAnimationPlayer(this AnimationPlayer animPlayer)
     {
         return (animNames) =>
         {

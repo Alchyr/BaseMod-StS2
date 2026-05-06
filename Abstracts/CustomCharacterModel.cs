@@ -119,6 +119,11 @@ public abstract class CustomCharacterModel : CharacterModel, ICustomModel, ILoca
         return null;
     }
 
+    /// <summary>
+    /// Amount of wait time to play death animation.
+    /// This method is only called if using a Godot animation with a "Dead" or "die" animation.
+    /// </summary>
+    public virtual float DeathAnimTime => 1.5f;
 
     /// <summary>
     /// Override and return a CreatureAnimator if you need to set up states that differ from the default for your character.

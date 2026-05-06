@@ -107,7 +107,7 @@ public class InstructionMatcher() : IMatcher
 
         public bool OpcodeMatch(CodeInstruction matchTest)
         {
-            return Opcodes.Contains(matchTest.opcode);
+            return Opcodes.Length == 0 || Opcodes.Contains(matchTest.opcode);
         }
 
         public override string ToString()
@@ -143,6 +143,12 @@ public class InstructionMatcher() : IMatcher
     //Building
     //https://learn.microsoft.com/en-us/dotnet/api/system.reflection.emit.opcodes.add?view=net-10.0
     //Special multi-possible cases
+    public InstructionMatcher any()
+    {
+        _target.Add(new InstructionMatch([]));
+        return this;
+    }
+    
     public InstructionMatcher stloc_any()
     {
         _target.Add(new InstructionMatch([

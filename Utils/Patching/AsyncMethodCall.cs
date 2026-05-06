@@ -344,7 +344,7 @@ public static class AsyncMethodCall
         }
 
         if (targetState == null)
-            throw new ArgumentException($"Unable to find state for target method {targetMethod.Name}");
+            throw new ArgumentException($"Unable to find state for target method {targetMethod?.Name}");
         
         //Analyze ending section
         Type? returnType = null;
@@ -451,7 +451,7 @@ public static class AsyncMethodCall
                 break;
         }
         
-        BaseLibMain.Logger.Info($"Adding new state {newStateIndex} for method {callMethod.DeclaringType?.Name ?? "???"}.{callMethod.Name} {(before ? "before" : "after")} {targetMethod.Name} with result type {resultType} ({resultName})");
+        BaseLibMain.Logger.Info($"Adding new state {newStateIndex} for method {callMethod.DeclaringType?.Name ?? "???"}.{callMethod.Name} {(before ? "before" : "after")} {targetMethod?.Name ?? targetState.Index.ToString()} with result type {resultType} ({resultName})");
         
         //Generate label and branch instruction
         var loadStateLabel = generator.DefineLabel();
@@ -488,8 +488,8 @@ public static class AsyncMethodCall
     {
         if (param.Name == null) throw new Exception("Unable to determine parameter name for method to call for async method call");
 
-        Action<List<CodeInstruction>>? addLoadInstructions = null;
-        Action<List<CodeInstruction>>? addStoreInstructions = null;
+        Action<List<CodeInstruction>>? addLoadInstructions;
+        Action<List<CodeInstruction>>? addStoreInstructions;
         
         if (param.Name == "__instance")
         {
@@ -558,8 +558,19 @@ public static class AsyncMethodCall
     
 
     private static readonly InstructionMatcher StateAwaitMatcher = new InstructionMatcher()
-        .call_any().PredicateMatch(arg => arg is MethodInfo method
-                                          && method.ReturnType.IsAssignableTo(typeof(Task)))
+        .any().PredicateMatch(arg =>
+        {
+            switch (arg)
+            {
+                case MethodInfo method
+                    when method.ReturnType.IsAssignableTo(typeof(Task)):
+                case FieldInfo field
+                    when field.FieldType.IsAssignableTo(typeof(Task)):
+                    return true;
+                default:
+                    return false;
+            }
+        })
         .callvirt(null).PredicateMatch(arg => arg is MethodInfo { Name: "GetAwaiter" });
 
     private record StateParamInfo(
@@ -571,7 +582,7 @@ public static class AsyncMethodCall
     {
         public int Index { get; }
         public List<CodeInstruction> Code { get; private set; }
-        public MethodInfo StateMethod { get; }
+        public MethodInfo? StateMethod { get; }
         
         public StateInfo(int index, List<CodeInstruction> code, FieldInfo stateField)
         {
@@ -581,7 +592,7 @@ public static class AsyncMethodCall
             StateMethod = AnalyzeCode(stateField, Index, Code);
         }
 
-        private static MethodInfo AnalyzeCode(FieldInfo stateField, int stateIndex, List<CodeInstruction> code)
+        private static MethodInfo? AnalyzeCode(FieldInfo stateField, int stateIndex, List<CodeInstruction> code)
         {
             var storeStateMatcher = new InstructionMatcher().stfld(stateField);
 
@@ -599,9 +610,8 @@ public static class AsyncMethodCall
                 .Step(-2).GetOperand(out var operand) //Get method called to get awaited task
                 .Step(3)
                 .Match(storeStateMatcher); //Move to next state store (occurs when awaited task does not end immediately)
-            var method = operand as MethodInfo ?? throw new InvalidOperationException("Failed to get awaited method from call instruction");
-
-            return method;
+            
+            return operand as MethodInfo;
         }
 
         public void Insert(bool before, int newStateIndex, MethodInfo callMethod, IEnumerable<StateParamInfo> loadFields,
