@@ -1,4 +1,5 @@
 ﻿using System.Reflection;
+using BaseLib.Abstracts;
 using BaseLib.Extensions;
 using BaseLib.Patches.Content;
 using BaseLib.Patches.Features;
@@ -15,7 +16,7 @@ namespace BaseLib.Patches;
 //Simplest patch that occurs after mod initialization, before anything else is done.
 //See OneTimeInitialization.ExecuteEssential
 
-//TODO - If no mods that modify gameplay and use baselib as a dependency are enabled, exclude basemod models from database
+//TODO - If no mods that modify gameplay and use baselib as a dependency are enabled, exclude basemod models from database?
 //This would allow features like vitality to be merged.
 
 [HarmonyPatch(typeof(LocManager), nameof(LocManager.Initialize))] 
@@ -25,7 +26,7 @@ class PostModInitPatch
     public static bool CanModifyGameplay => _anyModModifiesGameplay;
     
     [HarmonyPrefix]
-    private static void ProcessModdedTypes()
+    private static void PostModInit()
     {
         BaseLibMain.Logger.Info("Performing post-mod init patch");
 
@@ -38,6 +39,8 @@ class PostModInitPatch
             }
         }
         
+        CustomMessageWrapper.Initialize();
+        CustomTargetedMessageWrapper.Initialize();
         
         Harmony harmony = new("PostModInit");
 
