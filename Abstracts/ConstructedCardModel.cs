@@ -305,7 +305,7 @@ public abstract class ConstructedCardModel(
     }
 
     /// <summary>
-    /// Adds a keyword to the card. If <paramref name="removeOnUpgrade"/> is true, the keyword will be removed when the card is upgraded.
+    /// Adds a keyword to the card.
     /// </summary>
     protected ConstructedCardModel WithKeyword(CardKeyword keyword, UpgradeType upgradeType = UpgradeType.None)
     {
