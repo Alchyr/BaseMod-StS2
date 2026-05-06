@@ -10,6 +10,8 @@ using MegaCrit.Sts2.Core.Saves;
 
 namespace BaseLib.Audio;
 
+//TODO: Likely additional patches are needed for music/ambience playback to behave alongside basegame music/ambience.
+
 /// <summary>
 /// A class used to play sounds for mods.
 /// </summary>
